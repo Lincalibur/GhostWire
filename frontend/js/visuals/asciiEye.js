@@ -1,6 +1,8 @@
 /**
  * AsciiEye — a restless, character-based surveillance node whose pupil tracks
- * the cursor. Renders into its own <canvas> inside the supplied container.
+ * the cursor. The eye outline is a true "vesica" lens formed by the
+ * intersection of two circles, giving a crisp almond shape (ported from the
+ * detailed-red reference), rendered in a bold monospace for legibility.
  */
 export class AsciiEye {
   /**
@@ -14,15 +16,18 @@ export class AsciiEye {
 
     this.opts = Object.assign(
       {
-        color: '#ff2b2b',
-        bgAlpha: 0.12,
+        color: '#ff3535',
+        pupilColor: '#ff6a6a',
+        bgAlpha: 0.14,
         fontSize: 9,
-        proximity: 220,
+        proximity: 260,
         fps: 20,
         rerollRate: 0.015,
         chars: '01#%*+=-:;.ABCDEFGHIJKLMNOPQRSTUVWXYZ',
         glow: true,
         idle: !reducedMotion,
+        // Fraction of the box the eye lens fills (smaller => more padding).
+        fill: 0.9,
       },
       opts,
     );
@@ -82,7 +87,7 @@ export class AsciiEye {
     this.canvas.height = Math.round(this.height * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    this.ctx.font = `${this.opts.fontSize}px monospace`;
+    this.ctx.font = `bold ${this.opts.fontSize}px monospace`;
     this.charW = this.ctx.measureText('M').width;
     this.charH = this.opts.fontSize * 1.15;
     this.cols = Math.ceil(this.width / this.charW);
@@ -91,32 +96,33 @@ export class AsciiEye {
     this.cx = this.width / 2;
     this.cy = this.height / 2;
 
-    const a = Math.min(this.width * 0.48, this.height * 2.4);
-    const b = a * 0.28;
-    this.a = a;
-    this.b = b;
+    // Vesica geometry: two circles of radius R whose overlap forms the lens.
+    const halfW = Math.min(this.width * 0.48 * this.opts.fill, this.height * 1.35);
+    const halfH = halfW * 0.42;
+    this.a = halfW;
+    this.b = halfH;
+    this.R = (halfW * halfW + halfH * halfH) / (2 * halfH);
+    this.d = this.R - halfH;
 
-    this.irisR = b * 0.78;
-    this.pupilR = b * 0.42;
-    this.maxOffsetX = Math.max(0, (a - this.irisR) * 0.62);
-    this.maxOffsetY = Math.max(0, (b - this.irisR) * 0.62);
+    this.irisR = halfH * 0.78;
+    this.pupilR = halfH * 0.42;
+    this.maxOffsetX = Math.max(0, (halfW - this.irisR) * 0.62);
+    this.maxOffsetY = Math.max(0, (halfH - this.irisR) * 0.62);
 
     this._buildCells();
   }
 
   _buildCells() {
     this.cells = [];
-    const fadeBand = this.charH * 3.2;
-    const jitterAmt = this.charH * 1.1;
+    const fadeBand = this.charH * 2.6;
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
         const x = c * this.charW - this.cx + this.charW / 2;
         const y = r * this.charH - this.cy + this.charH / 2;
-        const rNorm = Math.hypot(x / this.a, y / this.b);
-        const rawEdge = (1 - rNorm) * Math.min(this.a, this.b);
-        const jitter = (Math.random() - 0.5) * jitterAmt;
-        const edge = rawEdge + jitter;
-        const inside = edge > 0;
+        const distA = Math.hypot(x, y + this.d);
+        const distB = Math.hypot(x, y - this.d);
+        const inside = distA <= this.R && distB <= this.R;
+        const edge = Math.min(this.R - distA, this.R - distB);
         if (!inside && edge < -fadeBand) continue;
         this.cells.push({ x, y, edge, inside, char: this._randChar() });
       }
@@ -184,7 +190,7 @@ export class AsciiEye {
   _draw() {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
-    ctx.font = `${this.opts.fontSize}px monospace`;
+    ctx.font = `bold ${this.opts.fontSize}px monospace`;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
     if (this.opts.glow) {
@@ -197,22 +203,26 @@ export class AsciiEye {
       const dy = cell.y - this.pupil.y;
       const rr = Math.hypot(dx, dy);
 
+      if (rr < this.pupilR) continue;
+
       let alpha;
-      if (rr < this.pupilR) {
-        continue;
-      } else if (cell.inside) {
-        const t = Math.min(1, cell.edge / (this.charH * 2.2));
-        alpha = 0.16 + t * 0.5;
+      let color = this.opts.color;
+      if (cell.inside) {
+        const edgeFade = Math.min(1, cell.edge / (this.charH * 1.8));
+        alpha = 0.28 + edgeFade * 0.55;
+        // Brighter ring just outside the pupil (the iris).
+        if (rr < this.irisR) color = this.opts.pupilColor;
       } else {
-        const t = Math.max(0, 1 + cell.edge / (this.charH * 3.2));
+        const t = Math.max(0, 1 + cell.edge / (this.charH * 2.6));
         alpha = this.opts.bgAlpha * t;
       }
 
       if (alpha <= 0.015) continue;
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = this.opts.color;
+      ctx.fillStyle = color;
       ctx.fillText(cell.char, this.cx + cell.x, this.cy + cell.y);
     }
     ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
   }
 }

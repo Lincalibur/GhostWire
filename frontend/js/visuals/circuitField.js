@@ -18,10 +18,12 @@ export class CircuitField {
       {
         color: '#ff2b2b',
         rainDensity: 0.1,
-        charFontSize: 10,
+        charFontSize: 11,
         charSpacing: 10,
         pulseSpeed: 0.00007,
         searchLineCount: 5,
+        // CSS selector for UI panels that wires should also route toward.
+        blockSelector: null,
       },
       opts,
     );
@@ -58,6 +60,16 @@ export class CircuitField {
     this._buildRain();
   }
 
+  /**
+   * Recompute node positions and wires without a full canvas resize.
+   * Call when UI panels appear/disappear so block wiring updates.
+   * @returns {void}
+   */
+  refresh() {
+    this._computeNodes();
+    this._buildWires();
+  }
+
   _computeNodes() {
     const cRect = this.container.getBoundingClientRect();
     this.center = null;
@@ -68,6 +80,31 @@ export class CircuitField {
       const cy = r.top + r.height / 2 - cRect.top;
       if (n.isCenter) this.center = { x: cx, y: cy };
       else this.satellites.push({ x: cx, y: cy });
+    }
+    this._computeBlockTargets(cRect);
+  }
+
+  /**
+   * Compute anchor points on visible UI panels (the closest point on each
+   * panel's border to the mesh center), so wires visibly terminate at the
+   * blocks. Hidden panels (0-size) are skipped.
+   * @param {DOMRect} cRect container bounding rect
+   */
+  _computeBlockTargets(cRect) {
+    this.blockTargets = [];
+    if (!this.opts.blockSelector || !this.center) return;
+    const els = document.querySelectorAll(this.opts.blockSelector);
+    for (const el of els) {
+      const r = el.getBoundingClientRect();
+      if (r.width < 8 || r.height < 8) continue; // hidden / collapsed
+      const left = r.left - cRect.left;
+      const top = r.top - cRect.top;
+      const right = left + r.width;
+      const bottom = top + r.height;
+      // Closest point on the panel rectangle to the mesh center.
+      const px = Math.max(left, Math.min(this.center.x, right));
+      const py = Math.max(top, Math.min(this.center.y, bottom));
+      this.blockTargets.push({ x: px, y: py, isBlock: true });
     }
   }
 
@@ -140,11 +177,18 @@ export class CircuitField {
       this.wires = [];
       return;
     }
-    const n = Math.max(1, this.satellites.length);
-    this.wires = this.satellites.map((s, i) => {
+    const targets = this.satellites.concat(this.blockTargets || []);
+    const n = Math.max(1, targets.length);
+    this.wires = targets.map((s, i) => {
       const pts = this._route(this.center.x, this.center.y, s.x, s.y, i);
       const { samples, total } = this._sample(pts, this.opts.charSpacing);
-      return { samples, total, phase: i / n, speed: this.opts.pulseSpeed * (0.8 + Math.random() * 0.5) };
+      return {
+        samples,
+        total,
+        phase: i / n,
+        speed: this.opts.pulseSpeed * (0.8 + Math.random() * 0.5),
+        isBlock: Boolean(s.isBlock),
+      };
     });
   }
 
@@ -206,7 +250,7 @@ export class CircuitField {
             x: c * cw,
             y: r * ch,
             ch: this._randRainChar(),
-            a: 0.02 + Math.random() * 0.1,
+            a: 0.04 + Math.random() * 0.13,
           });
         }
       }
@@ -238,8 +282,10 @@ export class CircuitField {
     const progressList = isSearch
       ? [this._triWave(t * w.speed + w.phase)]
       : [(t * w.speed + w.phase) % 1, (t * w.speed + w.phase + 0.5) % 1];
-    const windowFrac = isSearch ? 0.18 : 0.08;
-    const baseA = isSearch ? 0.08 : 0.16;
+    const windowFrac = isSearch ? 0.18 : 0.09;
+    // Structural wires to blocks/eyes sit brighter at rest for legibility;
+    // roaming search tendrils stay dimmer.
+    const baseA = isSearch ? 0.14 : 0.34;
 
     for (const s of w.samples) {
       let intensity = 0;
@@ -249,12 +295,12 @@ export class CircuitField {
         intensity = Math.max(intensity, Math.max(0, 1 - d / windowFrac));
       }
       const alpha = baseA + (1 - baseA) * intensity;
-      const r = Math.round(30 + (255 - 30) * intensity);
-      const g = Math.round(5 + (60 - 5) * intensity);
-      const b = Math.round(5 + (60 - 5) * intensity);
+      const r = Math.round(120 + (255 - 120) * intensity);
+      const g = Math.round(22 + (70 - 22) * intensity);
+      const b = Math.round(22 + (70 - 22) * intensity);
       ctx.globalAlpha = alpha;
       ctx.fillStyle = `rgb(${r},${g},${b})`;
-      ctx.shadowBlur = intensity > 0.5 ? 4 * intensity : 0;
+      ctx.shadowBlur = intensity > 0.4 ? 5 * intensity : 1.5;
       ctx.shadowColor = '#ff4040';
       ctx.fillText(s.char, s.x, s.y);
     }
@@ -265,7 +311,7 @@ export class CircuitField {
   _draw(t) {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
-    ctx.font = `${this.opts.charFontSize}px monospace`;
+    ctx.font = `bold ${this.opts.charFontSize}px monospace`;
     ctx.textBaseline = 'middle';
 
     ctx.textAlign = 'left';
@@ -286,11 +332,17 @@ export class CircuitField {
     for (const sl of this.searchLines) this._drawTrace(sl, t, true);
 
     const breathe = 0.5 + 0.5 * Math.sin(t * 0.0016);
-    const ringBase = Math.max(60, Math.min(this.width, this.height) * 0.065);
-    ctx.strokeStyle = `rgba(255,50,50,${0.18 * breathe})`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(this.center.x, this.center.y, ringBase + 4 * breathe, 0, Math.PI * 2);
-    ctx.stroke();
+    const ringBase = Math.max(80, Math.min(this.width, this.height) * 0.085);
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = '#ff3030';
+    for (let k = 0; k < 3; k++) {
+      const rr = ringBase + k * 16 + 4 * breathe;
+      ctx.strokeStyle = `rgba(255,60,60,${(0.4 - k * 0.1) * (0.6 + 0.4 * breathe)})`;
+      ctx.lineWidth = k === 0 ? 1.5 : 1;
+      ctx.beginPath();
+      ctx.arc(this.center.x, this.center.y, rr, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
   }
 }

@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { initMesh } from './visuals/mesh.js';
+import { initMesh, refreshMesh } from './visuals/mesh.js';
 import { AmbientHum } from './visuals/audio.js';
 import { initPortal } from './ui/portal.js';
 import { initConsole } from './ui/console.js';
@@ -24,6 +24,7 @@ function exitConsole() {
   document.getElementById('operator-id').value = '';
   document.getElementById('operator-pass').value = '';
   document.getElementById('otp-token').value = '';
+  refreshMesh();
 }
 
 /** Wire the ambient audio toggle button. */

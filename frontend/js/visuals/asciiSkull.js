@@ -11,8 +11,8 @@ export class AsciiSkull {
     this.container = container;
     this.opts = Object.assign(
       {
-        color: '#ff3b3b',
-        fontSize: 10,
+        color: '#ff4040',
+        fontSize: 11,
         fps: 20,
         rerollRate: 0.012,
         chars: '01',
@@ -127,7 +127,7 @@ export class AsciiSkull {
     blurred.width = W;
     blurred.height = H;
     const bctx = blurred.getContext('2d');
-    bctx.filter = 'blur(2px)';
+    bctx.filter = 'blur(1px)';
     bctx.drawImage(raw, 0, 0);
 
     this.maskW = W;
@@ -150,7 +150,7 @@ export class AsciiSkull {
     this.canvas.height = Math.round(this.height * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    this.ctx.font = `${this.opts.fontSize}px monospace`;
+    this.ctx.font = `bold ${this.opts.fontSize}px monospace`;
     this.charW = this.ctx.measureText('M').width;
     this.charH = this.opts.fontSize * 1.1;
     this.cols = Math.ceil(this.width / this.charW);
@@ -207,27 +207,28 @@ export class AsciiSkull {
     const n = Math.max(1, Math.floor(this.cells.length * this.opts.rerollRate));
     for (let i = 0; i < n; i++)
       this.cells[(Math.random() * this.cells.length) | 0].char = this._randChar();
-    this.pulse = this.opts.pulseSpeed ? 0.78 + 0.22 * Math.sin(t * this.opts.pulseSpeed) : 1;
+    this.pulse = this.opts.pulseSpeed ? 0.86 + 0.14 * Math.sin(t * this.opts.pulseSpeed) : 1;
   }
 
   _draw() {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
-    ctx.font = `${this.opts.fontSize}px monospace`;
+    ctx.font = `bold ${this.opts.fontSize}px monospace`;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
     if (this.opts.glow) {
       ctx.shadowColor = this.opts.color;
-      ctx.shadowBlur = 2.5;
+      ctx.shadowBlur = 3;
     }
     ctx.fillStyle = this.opts.color;
 
     for (const cell of this.cells) {
-      const a = Math.min(1, cell.base * 1.15) * this.pulse;
+      const a = Math.min(1, cell.base * 1.7) * this.pulse;
       if (a <= 0.02) continue;
       ctx.globalAlpha = a;
       ctx.fillText(cell.char, cell.x, cell.y);
     }
     ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
   }
 }

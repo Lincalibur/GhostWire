@@ -1,8 +1,11 @@
 import { api } from '../api.js';
 import { writeFeed } from './feed.js';
+import { AsciiLoader } from './loader.js';
+import { refreshMesh } from '../visuals/mesh.js';
 
 let modules = [];
 let activeModule = null;
+let loader = null;
 
 /**
  * Render the recon module tabs from backend metadata.
@@ -50,20 +53,27 @@ function selectModule(id, tabEl, tabsEl) {
 async function runQuery() {
   if (!activeModule) return;
   const input = document.getElementById('recon-query');
+  const runBtn = document.getElementById('btn-run-query');
   const query = input.value.trim();
   const statusEl = document.getElementById('module-status');
   if (!query) return;
 
   statusEl.textContent = 'SCANNING';
+  runBtn.disabled = true;
+  loader?.start(`SCANNING ${query.toUpperCase()}`);
   writeFeed(`[!] EXEC: ${activeModule.label} scan on [${query}]...`);
 
   try {
     const res = await api.recon.query(activeModule.id, query);
     writeFeed(res.lines);
     statusEl.textContent = 'COMPLETE';
+    loader?.stop('▓ SCAN COMPLETE');
   } catch (err) {
     writeFeed(`  [x] ${err.message}`);
     statusEl.textContent = err.code === 'RECON_RATE_LIMITED' ? 'THROTTLED' : 'ERROR';
+    loader?.stop('▒ SCAN ABORTED');
+  } finally {
+    runBtn.disabled = false;
   }
 }
 
@@ -80,6 +90,11 @@ export async function initConsole(handle, onLogout) {
   const runBtn = document.getElementById('btn-run-query');
   const queryInput = document.getElementById('recon-query');
   const logoutBtn = document.getElementById('btn-logout');
+  const loaderEl = document.getElementById('scan-loader');
+  loader = loaderEl ? new AsciiLoader(loaderEl) : null;
+
+  // Panels are now visible — re-wire the circuit mesh to connect to them.
+  refreshMesh();
 
   try {
     const res = await api.recon.modules();
