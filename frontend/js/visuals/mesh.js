@@ -1,6 +1,6 @@
 import { AsciiEye } from './asciiEye.js';
-import { AsciiSkull } from './asciiSkull.js';
 import { CircuitField } from './circuitField.js';
+import { SKULL_ART } from './skullArt.js';
 
 const ACCENT = '#ff3535';
 
@@ -20,12 +20,14 @@ export function initMesh({ eyeFontSize = 9 } = {}) {
   if (!network || !bgCanvas) return;
 
   const nodeDivs = network.querySelectorAll('.node');
-  const centerEl = network.querySelector('.node.center');
   const satelliteEls = network.querySelectorAll('.node.small');
 
   satelliteEls.forEach((el) => new AsciiEye(el, { color: ACCENT, proximity: 240, fontSize: eyeFontSize }));
 
-  if (centerEl) new AsciiSkull(centerEl, { color: ACCENT });
+  // Faint ASCII skull daemon at the core (the center node stays as the
+  // invisible wiring anchor for the circuit field).
+  const bgSkull = document.getElementById('bg-skull');
+  if (bgSkull && !bgSkull.textContent.trim()) bgSkull.textContent = SKULL_ART;
 
   const nodeRefs = Array.from(nodeDivs).map((el) => ({
     el,

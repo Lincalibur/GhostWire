@@ -3,6 +3,7 @@ import { initMesh, refreshMesh } from './visuals/mesh.js';
 import { AmbientHum } from './visuals/audio.js';
 import { initPortal } from './ui/portal.js';
 import { initConsole } from './ui/console.js';
+import { playIntro } from './ui/intro.js';
 
 /** Swap from the login portal to the authenticated console view. */
 function enterConsole(handle) {
@@ -78,6 +79,9 @@ function enableDevAffordances(health) {
 
 /** Application entrypoint. */
 async function main() {
+  // Kick off the boot intro immediately; the app initialises behind it.
+  playIntro();
+
   initMesh();
   initAudioToggle();
   initPortal(enterConsole);

@@ -67,7 +67,17 @@ export class AsciiEye {
     }
 
     this._resize();
-    requestAnimationFrame(this._loop.bind(this));
+    this._raf = requestAnimationFrame(this._loop.bind(this));
+  }
+
+  /** Stop the animation and detach listeners (used for the transient intro eyes). */
+  destroy() {
+    this._destroyed = true;
+    if (this._raf) cancelAnimationFrame(this._raf);
+    window.removeEventListener('mousemove', this._onMove);
+    window.removeEventListener('resize', this._onResize);
+    this._io?.disconnect();
+    this.canvas.remove();
   }
 
   _debounce(fn, ms) {
@@ -141,7 +151,8 @@ export class AsciiEye {
   }
 
   _loop(t) {
-    requestAnimationFrame(this._loop.bind(this));
+    if (this._destroyed) return;
+    this._raf = requestAnimationFrame(this._loop.bind(this));
     const interval = 1000 / this.opts.fps;
     if (t - this._lastTick < interval) return;
     this._lastTick = t;

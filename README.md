@@ -23,6 +23,15 @@ The front-end design of GhostWire rejects clean, sterile modern UI trends in fav
 *   **Primary Accent:** Crimson / Blood Red (`#8B0000` to `#FF0000`). Used sparingly for high-visibility components, signal highlights, and active terminals.
 *   **Secondary Accent:** Low-opacity, oxidized copper red or deep rust brown (`#4A0E0E`) to handle background structures without cluttering.
 
+### 1b. The Boot Intro (Page-Open Animation)
+On every page load a full-screen boot sequence plays before the app is revealed (`frontend/js/ui/intro.js`):
+*   **The Skull:** The block-character ASCII skull (`Example/SkullModal.md`, stored in `frontend/js/visuals/skullArt.js`) is the centrepiece, rendered as three stacked layers for an RGB-split **glitch** effect (red/cyan channels sliced via `clip-path` keyframes).
+*   **Circuit Storm:** A dense field of ASCII circuit lines converges on a pulsing core with fast travelling current sweeps and heavy binary rain — far more wiring than the ambient hero mesh.
+*   **The Eyes:** Live cursor-tracking ASCII eyes are scattered across the intro so the surveillance nodes are clearly visible during boot.
+*   **Boot Log + Skip:** A typed status log ("MOUNTING SURVEILLANCE MESH … OK") runs while periodic glitch bursts skew the frame. The overlay auto-dismisses (~3.6 s) or on any click / keypress, then fades to reveal the portal. Honours `prefers-reduced-motion`.
+
+The same skull art is also rendered as a faint, breathing background daemon (`#bg-skull`) behind the live mesh.
+
 ### 2. The Hero Component: The Surveillance Mesh
 The landing page displays a live, interactive vector/ASCII canvas representing a living network:
 *   **Background Static:** A dense field of low-opacity red binary matrix code ($0$s and $1$s) quietly and unevenly flickers in the background. It mimics weak radio interference or a cold digital hiss, rather than a fast-moving animation.
@@ -106,7 +115,7 @@ GhostWire/
         ├── main.js         # entrypoint
         ├── api.js          # typed fetch client
         ├── ui/             # portal (login/OTP), console, feed
-        └── visuals/        # asciiEye, asciiSkull, circuitField, audio, mesh
+        └── visuals/        # asciiEye, skullArt, circuitField, audio, mesh (+ intro in ui/)
 ```
 
 ### API surface
