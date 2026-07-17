@@ -1,5 +1,5 @@
 import { ApiError } from '../utils/ApiError.js';
-import { initiateLogin, verifyOtp } from '../services/auth.service.js';
+import { initiateLogin, verifyOtp, devLogin as devLoginService } from '../services/auth.service.js';
 import { setSessionCookie, clearSessionCookie } from '../services/token.service.js';
 
 /**
@@ -50,6 +50,18 @@ export async function verify(req, res) {
     status: 'AUTHORIZED',
     operator: { handle: operator.operatorHandle, authLevel: 4 },
   });
+}
+
+/**
+ * POST /api/auth/dev-login — development-only instant login (no OTP).
+ * Only mounted when dev mode is enabled.
+ * @param {import('express').Request} _req
+ * @param {import('express').Response} res
+ */
+export async function devLogin(_req, res) {
+  const { token, operator } = await devLoginService();
+  setSessionCookie(res, token);
+  res.json({ status: 'AUTHORIZED', dev: true, operator: { handle: operator.operatorHandle, authLevel: 4 } });
 }
 
 /**

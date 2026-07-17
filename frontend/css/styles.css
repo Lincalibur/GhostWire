@@ -346,6 +346,33 @@ body::after {
 
 .hidden { display: none !important; }
 
+/* ── Dev mode ─────────────────────────────────────────── */
+#dev-badge {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 2000;
+  background: #2a0a0a;
+  border: 1px solid var(--red);
+  color: var(--red);
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 4px 10px;
+  text-transform: uppercase;
+  box-shadow: 0 0 10px var(--red-glow);
+  animation: dev-pulse 2s ease-in-out infinite;
+}
+@keyframes dev-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.terminal-btn.dev {
+  border-style: dashed;
+  border-color: var(--red);
+  color: var(--ok);
+  margin-top: 8px;
+}
+
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 900px) {
   #console-view {

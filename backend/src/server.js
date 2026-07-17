@@ -1,14 +1,23 @@
 import { createApp } from './app.js';
 import { config } from './config/index.js';
 import { runMigrations, closeDb } from './db/index.js';
+import { ensureDevOperator } from './services/devMode.service.js';
 import { logger } from './utils/logger.js';
 
 /**
- * Bootstrap: apply migrations, start the HTTP listener, and wire graceful
- * shutdown handlers.
+ * Bootstrap: apply migrations, (optionally) seed the dev operator, start the
+ * HTTP listener, and wire graceful shutdown handlers.
  */
-function bootstrap() {
+async function bootstrap() {
   runMigrations();
+
+  if (config.dev.enabled) {
+    logger.warn('╔═══════════════════════════════════════════════════════╗');
+    logger.warn('║  DEV MODE ACTIVE — default login + OTP bypass enabled  ║');
+    logger.warn(`║  Login: ${config.dev.operatorHandle} / ${config.dev.operatorPassword}  (do NOT use in production)     ║`);
+    logger.warn('╚═══════════════════════════════════════════════════════╝');
+    await ensureDevOperator();
+  }
 
   const app = createApp();
   const server = app.listen(config.port, () => {
@@ -36,4 +45,7 @@ function bootstrap() {
   });
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  logger.error('Fatal bootstrap error', { error: err.message });
+  process.exit(1);
+});

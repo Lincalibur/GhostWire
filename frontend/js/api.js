@@ -40,6 +40,7 @@ export const api = {
   auth: {
     login: (handle, password) => request('/auth/login', { method: 'POST', body: { handle, password } }),
     verify: (handle, otp) => request('/auth/verify', { method: 'POST', body: { handle, otp } }),
+    devLogin: () => request('/auth/dev-login', { method: 'POST' }),
     logout: () => request('/auth/logout', { method: 'POST' }),
     session: () => request('/auth/session'),
   },

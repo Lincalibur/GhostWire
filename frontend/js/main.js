@@ -37,18 +37,78 @@ function initAudioToggle() {
   });
 }
 
+/**
+ * Enable dev-mode affordances: a corner badge, prefilled credentials, and a
+ * one-click "DEV LOGIN" button that bypasses the OTP.
+ * @param {{ devOperator?: string, devPassword?: string }} health
+ */
+function enableDevAffordances(health) {
+  document.body.classList.add('dev-mode');
+
+  const badge = document.createElement('div');
+  badge.id = 'dev-badge';
+  badge.textContent = 'DEV MODE';
+  document.body.appendChild(badge);
+
+  const idInput = document.getElementById('operator-id');
+  const passInput = document.getElementById('operator-pass');
+  if (idInput && health.devOperator) idInput.value = health.devOperator;
+  if (passInput && health.devPassword) passInput.value = health.devPassword;
+
+  const loginStep = document.getElementById('login-form-step');
+  if (loginStep && !document.getElementById('btn-dev-login')) {
+    const btn = document.createElement('button');
+    btn.id = 'btn-dev-login';
+    btn.type = 'button';
+    btn.className = 'terminal-btn dev';
+    btn.textContent = 'DEV LOGIN (skip OTP)';
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      try {
+        const res = await api.auth.devLogin();
+        enterConsole(res.operator.handle);
+      } catch {
+        btn.disabled = false;
+      }
+    });
+    loginStep.appendChild(btn);
+  }
+}
+
 /** Application entrypoint. */
 async function main() {
   initMesh();
   initAudioToggle();
   initPortal(enterConsole);
 
+  let devMode = false;
+  try {
+    const health = await api.health();
+    devMode = Boolean(health.devMode);
+    if (devMode) enableDevAffordances(health);
+  } catch {
+    /* health unavailable — continue as prod-like */
+  }
+
   // Resume an existing session if the cookie is still valid.
   try {
     const res = await api.auth.session();
-    if (res?.operator?.handle) enterConsole(res.operator.handle);
+    if (res?.operator?.handle) {
+      enterConsole(res.operator.handle);
+      return;
+    }
   } catch {
-    /* no active session — remain on the portal */
+    /* no active session */
+  }
+
+  // Dev mode: drop straight into the console for fast feature testing.
+  if (devMode) {
+    try {
+      const res = await api.auth.devLogin();
+      enterConsole(res.operator.handle);
+    } catch {
+      /* fall back to the (prefilled) portal */
+    }
   }
 }
 

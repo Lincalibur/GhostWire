@@ -132,19 +132,32 @@ For Windows, use the bundled `.bat` files (double-click or run from a terminal):
 
 | Script               | What it does                                                                 |
 | -------------------- | ---------------------------------------------------------------------------- |
-| `setup.bat`          | Checks Node, runs `npm install`, creates `.env` + generates `JWT_SECRET`, migrates & seeds the DB |
-| `start-backend.bat`  | Backend only — serves the API **and** the app on `http://localhost:8080`     |
+| `setup.bat`          | Checks Node, runs `npm install`, creates `.env` + generates `JWT_SECRET`, migrates the DB |
+| `start-dev.bat`      | **Dev mode** — auto-reload, default `ghost`/`wire` login, auto-login + OTP bypass |
+| `start-backend.bat`  | Backend only (prod-like) — serves the API **and** the app on `http://localhost:8080` |
 | `start-frontend.bat` | Frontend dev server on `http://localhost:5173`, proxying `/api` to the backend |
-| `start-all.bat`      | Launches backend + frontend, each in its own window                          |
+| `start-all.bat`      | Launches backend + frontend (prod-like), each in its own window              |
 
 First run on a new machine:
 ```bat
 setup.bat
-start-all.bat
+start-dev.bat      REM for feature testing (auto-login as ghost)
 ```
 `start-frontend.bat` requires the backend to be running (it proxies `/api` to it). If you only run `start-backend.bat`, the full app is already available at `http://localhost:8080` — the separate frontend server is just for iterating on the UI on its own port.
 
-> Cross-platform equivalents: `npm install`, `npm run setup` (migrate + seed), then `npm run backend` and/or `npm run frontend`.
+> Cross-platform equivalents: `npm install`, `npm run migrate`, then `npm run backend` / `npm run frontend`. For dev mode set `DEV_MODE=true` and `NODE_ENV=development` in the environment (e.g. `DEV_MODE=true npm run dev`).
+
+### Dev mode vs. production
+
+| | Dev mode (`start-dev.bat`) | Prod-like / production |
+| --- | --- | --- |
+| Enabled by | `DEV_MODE=true` and `NODE_ENV≠production` | default; forced off when `NODE_ENV=production` |
+| Default operator | auto-seeded `ghost` / `wire` | **none** — no default credentials exist |
+| Login | auto-login on page load; `DEV LOGIN` button bypasses OTP | full passphrase **+** OTP required |
+| `POST /api/auth/dev-login` | mounted | not registered (404) |
+| UI indicator | pulsing `DEV MODE` badge, prefilled form | none |
+
+Dev conveniences are **hard-disabled** whenever `NODE_ENV=production`, regardless of `DEV_MODE`. Keep production on its own database (the default `backend/data/ghostwire.db`) and never run `start-dev.bat` / `npm run seed` against it, so no default account is ever created there.
 
 ### Manual setup
 
@@ -165,19 +178,24 @@ start-all.bat
 3.  **Initialise the database:**
     ```bash
     npm run migrate     # apply schema
-    npm run seed        # optional: create demo operator (handle: ghost / pass: wire)
     ```
 
 4.  **Run:**
     ```bash
-    npm start           # or: npm run dev  (auto-reload)
+    # Dev mode (default ghost/wire login, auto-login, OTP bypass):
+    DEV_MODE=true NODE_ENV=development npm run dev
+
+    # Prod-like (full passphrase + OTP, no default account):
+    npm start
     ```
     Access the terminal via `http://localhost:8080`.
 
-### Login flow (demo)
-1. Enter operator **`ghost`** and passphrase **`wire`**.
-2. A 6-digit OTP is dispatched — in `console` mode it appears in the server log (`OTP dispatch ...`).
-3. Enter the OTP to establish a Level-4 session and drop into the recon console.
+### Login flow
+- **Dev mode:** the page auto-logs in as `ghost`; the form is prefilled and a `DEV LOGIN` button skips the OTP. No log-diving required.
+- **Prod-like / production:** create an operator (`npm run seed` for a `ghost`/`wire` test account, or add your own), then:
+  1. Enter the operator handle and passphrase.
+  2. A 6-digit OTP is dispatched — in `console` mode it appears in the server log (`OTP dispatch ...`).
+  3. Enter the OTP to establish a Level-4 session and drop into the recon console.
 
 ### Recon connectors
 | Module     | Purpose                    | Upstream (all passive/safe)                     |

@@ -1,32 +1,15 @@
 import { runMigrations, closeDb } from './index.js';
-import { userRepository } from './repositories.js';
-import { hashSecret } from '../utils/crypto.js';
+import { ensureDevOperator } from '../services/devMode.service.js';
 import { logger } from '../utils/logger.js';
 
 /**
- * Seed a demo operator so the portal can be exercised immediately.
- * Credentials (development only):
- *   handle:   ghost
- *   password: wire
+ * Explicitly seed the default operator (handle/password from config, default
+ * ghost/wire). Useful for exercising the real login + OTP flow without dev
+ * mode. Idempotent. Do not run against a production database.
  */
 async function seed() {
   runMigrations();
-
-  const handle = 'ghost';
-  const existing = userRepository.findByHandle(handle);
-  if (existing) {
-    logger.info('Demo operator already present; skipping seed.', { handle });
-    return;
-  }
-
-  const passwordHash = await hashSecret('wire');
-  userRepository.create({
-    operatorHandle: handle,
-    email: 'ghost@ghostwire.local',
-    passwordHash,
-  });
-
-  logger.info('Seeded demo operator.', { handle, password: 'wire' });
+  await ensureDevOperator();
 }
 
 seed()

@@ -23,6 +23,10 @@ function env(key, fallback = '') {
 const nodeEnv = env('NODE_ENV', 'development');
 const isProduction = nodeEnv === 'production';
 
+// Dev conveniences are only ever active outside production, and only when
+// explicitly opted in via DEV_MODE. In production this is forced off.
+const devModeEnabled = !isProduction && env('DEV_MODE', 'false') === 'true';
+
 const jwtSecret = env('JWT_SECRET', '');
 if (isProduction && (!jwtSecret || jwtSecret === 'change_me_to_a_long_random_value')) {
   throw new Error('[config] JWT_SECRET must be set to a strong value in production.');
@@ -54,6 +58,13 @@ export const config = Object.freeze({
     ttlSeconds: Number.parseInt(env('OTP_TTL_SECONDS', '300'), 10),
     channel: env('OTP_CHANNEL', 'console'),
     length: 6,
+  },
+
+  dev: {
+    enabled: devModeEnabled,
+    operatorHandle: env('DEV_OPERATOR_HANDLE', 'ghost'),
+    operatorPassword: env('DEV_OPERATOR_PASSWORD', 'wire'),
+    operatorEmail: env('DEV_OPERATOR_EMAIL', 'ghost@ghostwire.local'),
   },
 
   gateways: {

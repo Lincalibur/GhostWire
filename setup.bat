@@ -47,15 +47,17 @@ if errorlevel 1 (
 )
 echo.
 
-echo [i] Seeding demo operator (handle: ghost / passphrase: wire)...
-call npm run seed
-echo.
-
 echo ==================================================
 echo   [OK] Setup complete.
-echo   - start-all.bat        launch backend + frontend
-echo   - start-backend.bat    backend only (serves app on :8080)
-echo   - start-frontend.bat   frontend dev server on :5173
+echo.
+echo   DEV (default login ghost/wire, auto-login, OTP bypass):
+echo     - start-dev.bat        dev mode + auto-reload on :8080
+echo.
+echo   PROD-LIKE (full password + OTP, no default account):
+echo     - start-backend.bat    backend only (serves app on :8080)
+echo     - start-frontend.bat   frontend dev server on :5173
+echo     - start-all.bat        backend + frontend together
+echo     (create an operator with:  npm run seed  -- optional)
 echo ==================================================
 echo.
 pause

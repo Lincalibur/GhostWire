@@ -4,6 +4,7 @@ import { generateOtp, hashSecret, verifySecret } from '../utils/crypto.js';
 import { userRepository, otpRepository } from '../db/repositories.js';
 import { dispatchOtp } from './dispatch.service.js';
 import { issueSessionToken } from './token.service.js';
+import { ensureDevOperator } from './devMode.service.js';
 
 const MAX_OTP_ATTEMPTS = 5;
 
@@ -71,6 +72,24 @@ export async function verifyOtp({ handle, otp }) {
 
   otpRepository.markVerified(session.id);
 
+  const operator = { id: user.id, operatorHandle: user.operator_handle };
+  const token = issueSessionToken(operator);
+  return { token, operator };
+}
+
+/**
+ * Development-only shortcut: authenticate the configured dev operator without
+ * a password or OTP, minting a session token directly.
+ *
+ * @returns {Promise<{ token: string, operator: { id: string, operatorHandle: string } }>}
+ * @throws {ApiError} 403 when dev mode is not enabled
+ */
+export async function devLogin() {
+  if (!config.dev.enabled) {
+    throw ApiError.forbidden('Development login is disabled.', 'DEV_DISABLED');
+  }
+
+  const user = await ensureDevOperator();
   const operator = { id: user.id, operatorHandle: user.operator_handle };
   const token = issueSessionToken(operator);
   return { token, operator };
