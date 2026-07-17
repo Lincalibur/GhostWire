@@ -1,0 +1,37 @@
+{
+  "name": "ghostwire",
+  "version": "1.0.0",
+  "description": "GhostWire — a hardened, terminal-aesthetic OSINT recon portal.",
+  "type": "module",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev": "node --watch backend/src/server.js",
+    "backend": "node backend/src/server.js",
+    "frontend": "node scripts/serve-frontend.mjs",
+    "setup": "npm run migrate && npm run seed",
+    "migrate": "node backend/src/db/migrate.js",
+    "seed": "node backend/src/db/seed.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "osint",
+    "recon",
+    "security",
+    "terminal"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.3.0",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

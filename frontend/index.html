@@ -1,138 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GHOSTWIRE // OPERATOR PORTAL</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
+  <!-- Ambient audio toggle -->
+  <button id="audio-prompt" type="button">AUDIO: OFF</button>
 
-  <!-- Audio Toggle Switch -->
-  <div id="audio-prompt" onclick="toggleAudio()">AUDIO: OFF</div>
-
-  <!-- Background Surveillance Mesh Layer -->
+  <!-- Background surveillance mesh -->
   <div id="hero">
     <div id="network">
       <canvas id="bg-canvas"></canvas>
-      <!-- Satellites staggered around screen space -->
-      <div class="node small" id="node-1" style="left: 15%; top: 22%;"></div>
-      <div class="node small" id="node-2" style="left: 12%; top: 68%;"></div>
-      <div class="node small hide-mobile" id="node-3" style="left: 85%; top: 26%;"></div>
-      <div class="node small hide-mobile" id="node-4" style="left: 88%; top: 72%;"></div>
-      <div class="node small" id="node-5" style="left: 32%; top: 82%;"></div>
-      <div class="node small" id="node-6" style="left: 68%; top: 84%;"></div>
-      <!-- Center Skull node -->
-      <div class="node center" id="node-center" style="left: 50%; top: 48%;"></div>
+      <div class="node small" style="left: 15%; top: 22%;"></div>
+      <div class="node small" style="left: 12%; top: 68%;"></div>
+      <div class="node small hide-mobile" style="left: 85%; top: 26%;"></div>
+      <div class="node small hide-mobile" style="left: 88%; top: 72%;"></div>
+      <div class="node small" style="left: 32%; top: 82%;"></div>
+      <div class="node small" style="left: 68%; top: 84%;"></div>
+      <div class="node center" style="left: 50%; top: 48%;"></div>
     </div>
   </div>
 
   <div id="screen">
-    
-    <!-- Gatekeeper Portal Login -->
-    <div class="portal-container" id="login-view">
+    <!-- ── Gatekeeper portal ─────────────────────────────── -->
+    <section class="portal-container" id="login-view">
       <div class="terminal-window">
         <div class="terminal-header">[GHOSTWIRE GATEKEEPER v1.0.0]</div>
+
         <div id="login-form-step">
-          <p style="font-size: 12px; margin-bottom: 18px; color: var(--text-dim);">
-            STATUS: RESTRICTED ACCESS AREA // NODE SECURITY HIGH
-          </p>
+          <p class="terminal-note">STATUS: RESTRICTED ACCESS AREA // NODE SECURITY HIGH</p>
+
           <div class="form-group">
-            <label class="form-label">OPERATOR IDENTIFIER</label>
+            <label class="form-label" for="operator-id">OPERATOR IDENTIFIER</label>
             <div class="terminal-input-wrapper">
               <span class="terminal-input-prefix">ID:</span>
-              <input type="text" id="operator-id" class="terminal-input" placeholder="_" autocomplete="off" autofocus>
+              <input type="text" id="operator-id" class="terminal-input" placeholder="_"
+                     autocomplete="off" autofocus />
             </div>
           </div>
-          <button class="terminal-btn" onclick="submitOperator()">Submit Operator ID</button>
+
+          <div class="form-group">
+            <label class="form-label" for="operator-pass">ACCESS PASSPHRASE</label>
+            <div class="terminal-input-wrapper">
+              <span class="terminal-input-prefix">PW:</span>
+              <input type="password" id="operator-pass" class="terminal-input" placeholder="_"
+                     autocomplete="off" />
+            </div>
+          </div>
+
+          <button class="terminal-btn" id="btn-submit-operator" type="button">Submit Operator ID</button>
         </div>
 
         <div id="otp-form-step" class="hidden">
-          <p style="font-size: 11px; margin-bottom: 18px; color: var(--red);">
-            ALERT: TIME-SENSITIVE OTP ROUTED TO OOB CHANNEL (SIMULATED: 000000)
-          </p>
+          <p class="terminal-note alert" id="otp-channel-note">TOKEN ROUTED VIA OOB CHANNEL</p>
           <div class="form-group">
-            <label class="form-label">ENTER DYNAMIC TOKEN</label>
+            <label class="form-label" for="otp-token">ENTER DYNAMIC TOKEN</label>
             <div class="terminal-input-wrapper">
               <span class="terminal-input-prefix">OTP:</span>
-              <input type="text" id="otp-token" class="terminal-input" placeholder="_" autocomplete="off">
+              <input type="text" id="otp-token" class="terminal-input" placeholder="_"
+                     autocomplete="off" inputmode="numeric" />
             </div>
           </div>
-          <button class="terminal-btn" onclick="submitOtp()">Verify Operator Token</button>
+          <button class="terminal-btn" id="btn-submit-otp" type="button">Verify Operator Token</button>
         </div>
-      </div>
-    </div>
 
-    <!-- Operator Main Dashboard (Post-Auth) -->
-    <div id="console-view">
-      <!-- PANEL A (Top Left) -->
-      <div class="panel-window top-left-panel">
+        <p class="portal-error" id="portal-error"></p>
+      </div>
+    </section>
+
+    <!-- ── Operator console (post-auth) ──────────────────── -->
+    <section id="console-view" class="hidden">
+      <div class="panel-window p-sys">
         <div class="window-header">GHOSTWIRE // SYS_NODE</div>
         <div class="window-body">
-          <div class="stat-line">STATUS: ACTIVE</div>
+          <div class="stat-line">STATUS: <span class="ok">ACTIVE</span></div>
           <div class="stat-line">NODE: GW-991823</div>
           <div class="stat-line">LATENCY: 12ms</div>
           <div class="stat-line">BANDWIDTH: 1.2 GB/s</div>
         </div>
       </div>
 
-      <!-- PANEL B (Middle Left) -->
-      <div class="panel-window middle-left-panel">
+      <div class="panel-window p-meta">
         <div class="window-header">OPERATOR_META</div>
         <div class="window-body">
-          <div class="stat-line">ID: <span id="active-op-handle" style="color: var(--red);">UNKNOWN</span></div>
+          <div class="stat-line">ID: <span id="active-op-handle" class="accent">UNKNOWN</span></div>
           <div class="stat-line">AUTH: LEVEL_4</div>
+          <button class="terminal-btn small" id="btn-logout" type="button">Terminate Session</button>
         </div>
       </div>
 
-      <!-- PANEL C (Top Center) -->
-      <div class="panel-window top-center-panel">
-        <div class="window-body" style="text-align: center; font-size: 14px; letter-spacing: 2px; padding-top: 18px;">
-          FEED: <span style="color: var(--red); font-weight: bold; text-shadow: 0 0 5px var(--red-glow);">SECURE</span>
+      <div class="panel-window p-feed-status">
+        <div class="window-body center">
+          FEED: <span class="accent glow">SECURE</span>
         </div>
       </div>
 
-      <!-- PANEL E (Top Right) -->
-      <div class="panel-window top-right-panel">
+      <div class="panel-window p-engines">
         <div class="window-header">RECON_ENGINES</div>
-        <div class="window-body button-list">
-          <div class="module-tab active" onclick="switchModule('mspect', this)">µspect [FOOTPRINT]</div>
-          <div class="module-tab" onclick="switchModule('wiretap', this)">WireTap [SNIFFER]</div>
-          <div class="module-tab" onclick="switchModule('grimnir', this)">Grimnir [ALIAS]</div>
-          <div class="module-tab" onclick="switchModule('v0id', this)">v0id [BREACH]</div>
-        </div>
+        <div class="window-body" id="module-tabs"></div>
       </div>
 
-      <!-- PANEL F (Middle Right) -->
-      <div class="panel-window middle-right-panel">
-        <div class="window-header" id="module-title">µspect // TARGET FOOTPRINTING</div>
+      <div class="panel-window p-module">
+        <div class="window-header" id="module-title">MODULE</div>
         <div class="window-body">
-          <div class="form-group" style="margin-top: 10px;">
-            <label class="form-label" id="module-input-label">TARGET DOMAIN OR ADDRESS</label>
-            <div class="terminal-input-wrapper" style="border: 1px solid var(--red-dim); padding: 8px 12px; margin-top: 6px;">
+          <div class="form-group">
+            <label class="form-label" id="module-input-label" for="recon-query">QUERY</label>
+            <div class="terminal-input-wrapper bordered">
               <span class="terminal-input-prefix">&gt;</span>
-              <input type="text" id="recon-query" class="terminal-input" placeholder="Enter query..." onkeydown="handleQueryKey(event)">
+              <input type="text" id="recon-query" class="terminal-input" placeholder="Enter query..." />
             </div>
           </div>
-          <button class="terminal-btn" onclick="runReconQuery()" style="margin-top: 15px;">Execute Scan Module</button>
-          <div style="margin-top: 20px; font-size: 12px; color: var(--text-dim);">
-            MODULE STATE: <span id="module-status" style="color: var(--red);">READY</span>
-          </div>
+          <button class="terminal-btn" id="btn-run-query" type="button">Execute Scan Module</button>
+          <div class="module-state">MODULE STATE: <span id="module-status" class="accent">READY</span></div>
         </div>
       </div>
 
-      <!-- PANEL D (Bottom Panel) -->
-      <div class="panel-window bottom-panel">
+      <div class="panel-window p-console">
         <div class="window-header">CONSOLE OUTPUT LOGS</div>
         <div class="window-body">
-          <div class="terminal-feed" id="log-feed">
-            <div class="feed-line system">Ready for input parameters...</div>
-          </div>
+          <div class="terminal-feed" id="log-feed"></div>
         </div>
       </div>
-    </div>
+    </section>
   </div>
 
-  <script src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

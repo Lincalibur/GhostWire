@@ -69,37 +69,124 @@ Once decrypted, the interface drops the user into an integrated suite of command
 ## 🏗️ Technical Stack & Implementation
 
 ```text
-  [ FRONT-END / UI ]          [ MIDDLEWARE ]           [ ENGINES / DATA ]
-  - HTML5 / Vanilla JS        - Node.js (Express)      - OSINT API Bridges
-  - Custom SVG/CSS Canvas     - OTP Dispatch Service   - Python Scrapers
-  - WebGL Scanline Shaders    - Session Auth Guard     - Local JSON Stores
+  [ FRONT-END / UI ]          [ MIDDLEWARE ]              [ ENGINES / DATA ]
+  - HTML5 / Vanilla JS (ESM)  - Node.js (Express)         - OSINT API bridges
+  - Canvas ASCII engine       - OTP dispatch service      - Cloudflare DoH / HIBP
+  - CRT scanline CSS shaders  - JWT session auth guard    - SQLite (better-sqlite3)
+  - 40Hz Web Audio hum        - Helmet + rate limiting    - Audit / query logs
 ```
 
-*   **Static/Raster Emulation:** CSS custom properties (`@keyframes`) are heavily utilized to animate ASCII color shifts, preventing heavy CPU overhead.
-*   **Audio Atmosphere (Optional):** A subtle low-frequency background hum (40Hz sinusoidal wave) plays upon user interaction, strengthening the "surveillance van" realism.
+*   **Static/Raster Emulation:** The surveillance mesh (eyes, skull, wiring, matrix rain) is rendered on a single `<canvas>` per node to avoid DOM thrash; CSS `@keyframes` handle the scanline/flicker overlay.
+*   **Audio Atmosphere (Optional):** A subtle 40Hz sawtooth hum (low-passed) plays on user interaction, strengthening the "surveillance van" realism.
+
+---
+
+## 🧱 Project Structure
+
+```text
+GhostWire/
+├── package.json            # scripts: start | dev | migrate | seed
+├── .env.example            # copy to .env and configure
+├── backend/
+│   ├── data/               # SQLite database (gitignored)
+│   └── src/
+│       ├── server.js       # bootstrap + graceful shutdown
+│       ├── app.js          # Express app: helmet, cors, static, routes
+│       ├── config/         # centralised env-driven config
+│       ├── db/             # schema.sql, connection, repositories, migrate, seed
+│       ├── middleware/     # auth guard, rate limiters, error handler
+│       ├── controllers/    # thin HTTP handlers (auth, recon)
+│       ├── services/       # auth, OTP dispatch, token, recon orchestration
+│       ├── connectors/     # µspect, WireTap, Grimnir, v0id + registry
+│       └── utils/          # logger, crypto, ApiError
+└── frontend/
+    ├── index.html
+    ├── css/styles.css
+    └── js/
+        ├── main.js         # entrypoint
+        ├── api.js          # typed fetch client
+        ├── ui/             # portal (login/OTP), console, feed
+        └── visuals/        # asciiEye, asciiSkull, circuitField, audio, mesh
+```
+
+### API surface
+
+| Method | Endpoint              | Auth | Purpose                                  |
+| ------ | --------------------- | ---- | ---------------------------------------- |
+| GET    | `/api/health`         | –    | Node liveness probe                      |
+| POST   | `/api/auth/login`     | –    | Verify credentials, dispatch OTP         |
+| POST   | `/api/auth/verify`    | –    | Validate OTP, set HTTP-only session      |
+| POST   | `/api/auth/logout`    | –    | Terminate session                        |
+| GET    | `/api/auth/session`   | ✔    | Report current operator                  |
+| GET    | `/api/recon/modules`  | ✔    | List available recon modules             |
+| POST   | `/api/recon/query`    | ✔    | Execute a recon module (rate-limited)    |
+| GET    | `/api/recon/history`  | ✔    | Recent query history for the operator    |
 
 ---
 
 ## 🚀 Setup & Deployment
 
-1.  **Clone the Repository:**
+### Windows quick start (batch scripts)
+
+For Windows, use the bundled `.bat` files (double-click or run from a terminal):
+
+| Script               | What it does                                                                 |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `setup.bat`          | Checks Node, runs `npm install`, creates `.env` + generates `JWT_SECRET`, migrates & seeds the DB |
+| `start-backend.bat`  | Backend only — serves the API **and** the app on `http://localhost:8080`     |
+| `start-frontend.bat` | Frontend dev server on `http://localhost:5173`, proxying `/api` to the backend |
+| `start-all.bat`      | Launches backend + frontend, each in its own window                          |
+
+First run on a new machine:
+```bat
+setup.bat
+start-all.bat
+```
+`start-frontend.bat` requires the backend to be running (it proxies `/api` to it). If you only run `start-backend.bat`, the full app is already available at `http://localhost:8080` — the separate frontend server is just for iterating on the UI on its own port.
+
+> Cross-platform equivalents: `npm install`, `npm run setup` (migrate + seed), then `npm run backend` and/or `npm run frontend`.
+
+### Manual setup
+
+1.  **Clone & install:**
     ```bash
     git clone https://github.com/your-repo/ghostwire.git
     cd ghostwire
-    ```
-
-2.  **Configure Environment Variables (`.env`):**
-    ```env
-    PORT=8080
-    OTP_SECRET=your_high_entropy_jwt_secret
-    SMS_API_KEY=your_out_of_band_sms_gateway_key
-    ```
-
-3.  **Install Dependencies & Initialize Node:**
-    ```bash
     npm install
-    npm start
     ```
 
-4.  **Target Directory:**
+2.  **Configure environment:** copy `.env.example` to `.env` and set at minimum a strong `JWT_SECRET`:
+    ```bash
+    cp .env.example .env
+    node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"   # generate a secret
+    ```
+    In development, `OTP_CHANNEL=console` prints the OTP to the server log. For production, set it to `email`/`sms` and wire the gateway keys.
+
+3.  **Initialise the database:**
+    ```bash
+    npm run migrate     # apply schema
+    npm run seed        # optional: create demo operator (handle: ghost / pass: wire)
+    ```
+
+4.  **Run:**
+    ```bash
+    npm start           # or: npm run dev  (auto-reload)
+    ```
     Access the terminal via `http://localhost:8080`.
+
+### Login flow (demo)
+1. Enter operator **`ghost`** and passphrase **`wire`**.
+2. A 6-digit OTP is dispatched — in `console` mode it appears in the server log (`OTP dispatch ...`).
+3. Enter the OTP to establish a Level-4 session and drop into the recon console.
+
+### Recon connectors
+| Module     | Purpose                    | Upstream (all passive/safe)                     |
+| ---------- | -------------------------- | ----------------------------------------------- |
+| `µspect`   | Domain footprinting        | Cloudflare DNS-over-HTTPS                        |
+| `WireTap`  | Cloud bucket exposure      | Passive S3 endpoint probing (GrayhatWarfare opt) |
+| `Grimnir`  | Username / alias discovery | HTTP status probing of public profiles          |
+| `v0id`     | Breach / credential check  | HaveIBeenPwned range API (k-anonymity)          |
+
+Connectors degrade gracefully (return a diagnostic line) when upstreams are unreachable or optional API keys are unset.
+
+> **Note on the `Example/` folder:** the original design mock-ups live in `Example/` for reference only. The functional application is the `backend/` + `frontend/` framework described above.
