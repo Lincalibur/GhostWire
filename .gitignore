@@ -18,3 +18,5 @@ logs/
 # OS / editor cruft
 .DS_Store
 Thumbs.db
+
+/Example/UpgradeTools.md
