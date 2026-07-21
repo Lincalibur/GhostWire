@@ -1,3 +1,6 @@
+import { getRuntimeConfig } from './config.js';
+import { staticApi } from './staticApi.js';
+
 const BASE = '/api';
 
 /**
@@ -33,8 +36,7 @@ async function request(path, { method = 'GET', body } = {}) {
   return payload;
 }
 
-/** GhostWire API surface. */
-export const api = {
+const liveApi = {
   health: () => request('/health'),
 
   auth: {
@@ -51,3 +53,6 @@ export const api = {
     history: () => request('/recon/history'),
   },
 };
+
+/** GhostWire API surface — live backend, or static demo on GitHub Pages. */
+export const api = getRuntimeConfig().staticDemo ? staticApi : liveApi;

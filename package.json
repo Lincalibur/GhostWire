@@ -9,6 +9,7 @@
     "dev": "node --watch backend/src/server.js",
     "backend": "node backend/src/server.js",
     "frontend": "node scripts/serve-frontend.mjs",
+    "pages:build": "node scripts/prepare-pages.mjs",
     "setup": "npm run migrate && npm run seed",
     "migrate": "node backend/src/db/migrate.js",
     "seed": "node backend/src/db/seed.js"

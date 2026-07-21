@@ -3,9 +3,6 @@ name: Deploy GitHub Pages
 # Builds the GhostWire static frontend from main and deploys via GitHub Actions Pages.
 # Feature / development branches do not publish — merge or push to main to update the site.
 #
-# This file is the Example reference copy. The live workflow GitHub runs lives at:
-#   .github/workflows/deploy-github-pages.yml
-#
 # One-time setup: Settings → Pages → Source = GitHub Actions
 # (Do not use "Deploy from a branch" — that triggers the flaky pages-build-deployment CDN purge.)
 #

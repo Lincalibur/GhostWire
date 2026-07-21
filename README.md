@@ -175,6 +175,26 @@ start-dev.bat      REM for feature testing (auto-login as ghost)
 
 > Cross-platform equivalents: `npm install`, `npm run migrate`, then `npm run backend` / `npm run frontend`. For dev mode set `DEV_MODE=true` and `NODE_ENV=development` in the environment (e.g. `DEV_MODE=true npm run dev`).
 
+### GitHub Pages (static showcase)
+
+Push or merge to **`main`** runs [`.github/workflows/deploy-github-pages.yml`](.github/workflows/deploy-github-pages.yml) and publishes the frontend to GitHub Pages.
+
+**One-time repo setup:** Settings → Pages → **Source = GitHub Actions** (not “Deploy from a branch”).
+
+| Detail | Value |
+| --- | --- |
+| Trigger | `push` to `main` (frontend / workflow paths) or **workflow_dispatch** |
+| Site URL | `https://<owner>.github.io/<repo>/` (e.g. `https://lincalibur.github.io/GhostWire/`) |
+| Build | `npm run pages:build` → copies `frontend/` to `dist/`, injects `STATIC_DEMO`, writes `404.html` |
+
+Pages cannot host the Express/SQLite backend. The published build uses an in-browser mock API (`STATIC DEMO` badge) so the gate, arsenal, and console remain interactive. For live OSINT, run the Node stack locally or on a real server.
+
+Local Pages bundle preview:
+```bash
+BASE_PATH=/GhostWire/ STATIC_DEMO=true npm run pages:build
+# then serve ./dist with any static file server
+```
+
 ### Dev mode vs. production
 
 | | Dev mode (`start-dev.bat`) | Prod-like / production |

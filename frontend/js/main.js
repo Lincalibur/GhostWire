@@ -49,7 +49,7 @@ function enableDevAffordances(health) {
 
   const badge = document.createElement('div');
   badge.id = 'dev-badge';
-  badge.textContent = 'DEV MODE';
+  badge.textContent = health.staticDemo ? 'STATIC DEMO' : 'DEV MODE';
   document.body.appendChild(badge);
 
   const idInput = document.getElementById('operator-id');
