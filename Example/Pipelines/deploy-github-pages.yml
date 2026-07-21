@@ -1,0 +1,98 @@
+name: Deploy GitHub Pages
+
+# Builds Portfolio.Web from main only and deploys via GitHub Actions Pages.
+# Feature / development branches do not publish — merge to main to update the site.
+#
+# One-time setup: Settings → Pages → Source = GitHub Actions
+# (Do not use "Deploy from a branch" — that triggers the flaky pages-build-deployment CDN purge.)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/Portfolio.Web/**'
+      - '.github/workflows/deploy-github-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build static SPA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: src/Portfolio.Web/package-lock.json
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install dependencies
+        working-directory: src/Portfolio.Web
+        run: npm ci
+
+      - name: Build for GitHub Pages
+        working-directory: src/Portfolio.Web
+        env:
+          # Project site URL: https://<owner>.github.io/<repo>/
+          BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_STATIC_DEMO: 'true'
+          VITE_ENABLE_INTERACTION_METRICS: 'false'
+          VITE_USE_HOST_STATS_API: 'false'
+          VITE_API_BASE_URL: ''
+        run: npm run build
+
+      - name: SPA fallback for deep links
+        working-directory: src/Portfolio.Web
+        run: cp dist/index.html dist/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: src/Portfolio.Web/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
+    steps:
+      # Transient GitHub CDN hangs (purging_cdn) are a known platform flake.
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 600000
+        continue-on-error: true
+
+      - name: Deploy retry (CDN purge flakiness)
+        id: deployment_retry
+        if: steps.deployment.outcome != 'success'
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 600000
+        continue-on-error: true
+
+      - name: Fail if both deploy attempts failed
+        if: steps.deployment.outcome != 'success' && steps.deployment_retry.outcome != 'success'
+        run: |
+          echo "GitHub Pages deploy failed twice (often a transient CDN purge outage)."
+          echo "Re-run this workflow later, or check https://www.githubstatus.com/"
+          exit 1
