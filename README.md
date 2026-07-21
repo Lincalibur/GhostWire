@@ -23,14 +23,16 @@ The front-end design of GhostWire rejects clean, sterile modern UI trends in fav
 *   **Primary Accent:** Crimson / Blood Red (`#8B0000` to `#FF0000`). Used sparingly for high-visibility components, signal highlights, and active terminals.
 *   **Secondary Accent:** Low-opacity, oxidized copper red or deep rust brown (`#4A0E0E`) to handle background structures without cluttering.
 
-### 1b. The Boot Intro (Page-Open Animation)
-On every page load a full-screen boot sequence plays before the app is revealed (`frontend/js/ui/intro.js`):
-*   **The Skull:** The block-character ASCII skull (`Example/SkullModal.md`, stored in `frontend/js/visuals/skullArt.js`) is the centrepiece, rendered as three stacked layers for an RGB-split **glitch** effect (red/cyan channels sliced via `clip-path` keyframes).
-*   **Circuit Storm:** A dense field of ASCII circuit lines converges on a pulsing core with fast travelling current sweeps and heavy binary rain — far more wiring than the ambient hero mesh.
-*   **The Eyes:** Live cursor-tracking ASCII eyes are scattered across the intro so the surveillance nodes are clearly visible during boot.
-*   **Boot Log + Skip:** A typed status log ("MOUNTING SURVEILLANCE MESH … OK") runs while periodic glitch bursts skew the frame. The overlay auto-dismisses (~3.6 s) or on any click / keypress, then fades to reveal the portal. Honours `prefers-reduced-motion`.
+### 1b. The Boot Intro — Locked Data Nexus Gate
+On every page load a full-screen **gate** blocks the app until the operator clicks **Accept & Proceed** (`frontend/js/ui/intro.js`). There is no skip shortcut and no auto-dismiss.
 
-The same skull art is also rendered as a faint, breathing background daemon (`#bg-skull`) behind the live mesh.
+*   **Central figure:** `frontend/assets/divine-apparition.png` (from `Example/Divine_Apparition-removebg-preview.png`) with a breathing glow and target reticle behind it.
+*   **Full-viewport ASCII stream:** Characters spawn off all four edges and converge on the figure (theme polish from `Example/themeUpdate.md`).
+*   **HUD framing:** Corner brackets (`┌ ┐ └ ┘`), top status bar (`GHOSTWIRE // SYS_NODE | STATUS: PENDING | AUTH: REQUIRED`), faint scrolling hex matrix, scanlines + grid.
+*   **Humanized typewriter:** Warning copy types with punctuation pauses and hesitations; the Continue button only appears when typing finishes.
+*   **Tear-away exit:** Split panels slide outward and the core fades, then auth / portal / console may proceed.
+
+Layout inspiration: `Example/ghostwire_intro.html`.
 
 ### 2. The Hero Component: The Surveillance Mesh
 The landing page displays a live, interactive vector/ASCII canvas representing a living network:

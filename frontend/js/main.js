@@ -79,12 +79,12 @@ function enableDevAffordances(health) {
 
 /** Application entrypoint. */
 async function main() {
-  // Kick off the boot intro immediately; the app initialises behind it.
-  playIntro();
-
+  // Mesh + portal boot behind the gate; auth waits until Continue.
   initMesh();
   initAudioToggle();
   initPortal(enterConsole);
+
+  await playIntro();
 
   let devMode = false;
   try {
