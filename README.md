@@ -44,6 +44,23 @@ The landing page displays a live, interactive vector/ASCII canvas representing a
     *   **Current Sweeps:** Sequential brightness animations loop along these pathways, making characters flare from near-black to hot crimson and fade back down to simulate high-frequency signal propagation.
 *   **The Restless Wires (The Unnerving Detail):** A small subset of unmapped pathways break away from the skull, snaking out randomly into dead-ends in empty screen space. These paths dynamically fade, recalculate, and reroute, giving the interface a restless, searching intelligence.
 
+### 3. Recon Arsenal — Brutalist Tool Cards
+After authentication the console presents a horizontal **RECON_ARSENAL** gallery. Each live OSINT module is a 4-layer card (see `Example/themeUpdate.md`):
+
+1. **Layer 1** — dark HUD grid background  
+2. **Layer 2** — giant low-opacity brutalist word (`RECON` / `OBSCURE` / `ALIAS` / `LEAK`)  
+3. **Layer 3** — character cutout (`frontend/assets/tools/tool1–4.png`) with `mix-blend-mode: screen` so black JPEG/PNG boxes drop out  
+4. **Layer 4** — gothic title, description, and `LAUNCH MODULE` CTA  
+
+| Asset | Module | Role |
+| --- | --- | --- |
+| `tool1.png` | µspect | Domain & IP recon |
+| `tool2.png` | v0id | Credential / breach assessment |
+| `tool3.png` | Grimnir | Social / alias footprint |
+| `tool4.png` | WireTap | Cloud-bucket leak sniffing |
+
+Selecting a card arms that connector in the query panel; execution still hits the live upstream APIs.
+
 ---
 
 ## 🔒 Portal Authentication & Gatekeeping

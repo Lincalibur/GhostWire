@@ -1,13 +1,17 @@
 :root {
-  --bg: #000000;
+  --bg: #0a0a0a;
+  --bg-dark: #0a0a0a;
   --red: #ff3b3b;
-  --red-mid: #d11a1a;
+  --red-mid: #d01212;
+  --accent-red: #d01212;
   --red-dim: #6a1414;
   --red-glow: rgba(255, 60, 60, 0.5);
-  --text: #ffd9d9;
+  --text: #f0f0f0;
+  --text-white: #f0f0f0;
   --text-dim: #c98787;
   --ok: #ff8080;
   --font: 'Courier New', 'Fira Code', monospace;
+  --font-gothic: 'UnifrakturMaguntia', 'Times New Roman', serif;
 }
 
 * {
@@ -240,15 +244,16 @@ body::after {
   width: 100%;
   height: 100%;
   display: none;
-  grid-template-columns: 320px 1fr 360px;
-  grid-template-rows: 104px 1fr 250px;
+  grid-template-columns: 280px 1fr 280px;
+  grid-template-rows: 96px minmax(300px, 46vh) minmax(160px, 1fr) 210px;
   grid-template-areas:
-    'sys  feedstatus engines'
-    'meta module     engines'
-    'console console  console';
-  gap: 18px;
-  padding: 18px;
-  background: rgba(0, 0, 0, 0.28);
+    'sys     feedstatus meta'
+    'engines engines    engines'
+    'module  console    console'
+    'module  console    console';
+  gap: 16px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .p-sys { grid-area: sys; }
@@ -337,28 +342,147 @@ body::after {
   50% { opacity: 0.85; }
 }
 
-/* Recon module tabs */
-.module-tab {
-  border: 1px solid var(--red-dim);
-  padding: 14px 16px;
-  margin-bottom: 12px;
+/* ── Brutalist tool cards (text-behind-subject) ────────── */
+.tool-gallery-wrap {
+  padding: 12px !important;
+  overflow: hidden;
+}
+.tool-gallery {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  height: 100%;
+  min-height: 260px;
+}
+
+.tool-card {
+  position: relative;
+  height: 100%;
+  min-height: 260px;
+  background-color: var(--bg-dark);
+  border: 1px solid #222;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+.tool-card:hover {
+  border-color: var(--accent-red);
+  transform: translateY(-5px);
+}
+.tool-card.active {
+  border-color: var(--accent-red);
+  box-shadow: 0 0 18px rgba(208, 18, 18, 0.35), inset 0 0 24px rgba(208, 18, 18, 0.12);
+}
+.tool-card:focus-visible {
+  outline: 2px solid var(--accent-red);
+  outline-offset: 2px;
+}
+
+/* Layer 1 — HUD grid */
+.card-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(208, 18, 18, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(208, 18, 18, 0.04) 1px, transparent 1px);
+  background-size: 18px 18px;
+  opacity: 0.7;
+}
+
+/* Layer 2 — massive background typography */
+.bg-text {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: Impact, 'Arial Black', sans-serif;
+  font-size: clamp(2.4rem, 4.2vw, 4.6rem);
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.08);
+  letter-spacing: 4px;
+  z-index: 1;
+  pointer-events: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Layer 3 — subject cutout (screen blend knocks out JPEG/PNG black boxes) */
+.subject-img {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) scale(1);
+  height: 68%;
+  width: auto;
+  max-width: 110%;
+  object-fit: contain;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.8));
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s;
+}
+.tool-card:hover .subject-img,
+.tool-card.active .subject-img {
+  transform: translateX(-50%) scale(1.08);
+  filter: drop-shadow(0 0 15px rgba(208, 18, 18, 0.45));
+}
+
+/* Layer 4 — tool info + CTA */
+.card-info {
+  position: relative;
+  z-index: 3;
+  margin-top: auto;
+  background: linear-gradient(180deg, transparent 0%, rgba(10, 10, 10, 0.95) 38%);
+  padding-top: 28px;
+  pointer-events: none;
+}
+.tool-id {
+  font-family: var(--font);
+  font-size: 0.72rem;
   letter-spacing: 1px;
-  color: var(--text-dim);
-  transition: all 0.15s ease;
+  color: var(--accent-red);
 }
-.module-tab:hover {
-  border-color: var(--red);
-  color: var(--text);
-  background: rgba(40, 8, 8, 0.6);
+.tool-title {
+  font-family: var(--font-gothic);
+  font-size: clamp(1.35rem, 1.8vw, 1.85rem);
+  font-weight: normal;
+  color: var(--text-white);
+  margin: 4px 0 6px;
+  line-height: 1.1;
 }
-.module-tab.active {
-  border-color: var(--red);
-  color: var(--red);
-  background: rgba(70, 12, 12, 0.6);
-  box-shadow: inset 0 0 14px rgba(255, 60, 60, 0.25), 0 0 8px var(--red-glow);
+.tool-desc {
+  font-family: var(--font);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #888;
+  margin-bottom: 12px;
+  min-height: 2.6em;
+}
+.tool-btn {
+  display: inline-block;
+  color: var(--text-white);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  border: 1px solid #333;
+  padding: 7px 11px;
+  transition: all 0.2s;
+}
+.tool-card:hover .tool-btn,
+.tool-card.active .tool-btn {
+  background-color: var(--accent-red);
+  border-color: var(--accent-red);
+  color: #fff;
 }
 
 /* Console feed */
@@ -560,6 +684,14 @@ body::after {
 }
 
 /* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .tool-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #console-view {
+    grid-template-rows: 96px minmax(420px, 52vh) minmax(160px, 1fr) 210px;
+  }
+}
 @media (max-width: 900px) {
   #console-view {
     grid-template-columns: 1fr;
@@ -573,7 +705,17 @@ body::after {
       'console';
     overflow-y: auto;
   }
+  .tool-gallery {
+    grid-template-columns: 1fr 1fr;
+    min-height: 0;
+  }
+  .tool-card {
+    min-height: 320px;
+  }
 }
 @media (max-width: 768px) {
   .node.hide-mobile { display: none !important; }
+  .tool-gallery {
+    grid-template-columns: 1fr;
+  }
 }

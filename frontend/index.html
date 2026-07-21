@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GHOSTWIRE // OPERATOR PORTAL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -94,6 +97,12 @@
         </div>
       </div>
 
+      <div class="panel-window p-feed-status">
+        <div class="window-body center">
+          FEED: <span class="accent glow">SECURE</span>
+        </div>
+      </div>
+
       <div class="panel-window p-meta">
         <div class="window-header">OPERATOR_META</div>
         <div class="window-body">
@@ -103,15 +112,11 @@
         </div>
       </div>
 
-      <div class="panel-window p-feed-status">
-        <div class="window-body center">
-          FEED: <span class="accent glow">SECURE</span>
-        </div>
-      </div>
-
       <div class="panel-window p-engines">
-        <div class="window-header">RECON_ENGINES</div>
-        <div class="window-body" id="module-tabs"></div>
+        <div class="window-header">RECON_ARSENAL</div>
+        <div class="window-body tool-gallery-wrap">
+          <div class="tool-gallery" id="tool-gallery"></div>
+        </div>
       </div>
 
       <div class="panel-window p-module">
