@@ -19,7 +19,7 @@
 
     <div class="hud-top-bar">
       <div class="hud-block">GHOSTWIRE // SYS_NODE</div>
-      <div class="hud-block">STATUS: <span class="hud-warn">PENDING</span></div>
+      <div class="hud-block">STATUS: <span class="hud-warn" id="intro-status">PENDING</span></div>
       <div class="hud-block red-text">AUTH: REQUIRED</div>
     </div>
 
@@ -31,35 +31,48 @@
     <div class="gate-panel panel-left" aria-hidden="true"></div>
     <div class="gate-panel panel-right" aria-hidden="true"></div>
 
-    <div class="intro-core">
-      <div class="nexus-wrapper">
-        <div class="crosshair" aria-hidden="true">
-          <span class="ch-h"></span>
-          <span class="ch-v"></span>
-          <span class="ch-ring"></span>
-          <span class="ch-ring outer"></span>
-        </div>
-        <div class="core-glow" aria-hidden="true"></div>
-        <img
-          id="nexusImg"
-          class="nexus-figure"
-          src="assets/divine-apparition.png"
-          alt="Divine Apparition — GhostWire nexus"
-          draggable="false"
-        />
-      </div>
+    <div id="perspective-wrap" aria-hidden="true">
+      <div id="intro-scene">
+        <div class="intro-core">
+          <div id="door-wrap">
+            <div id="door-frame" aria-hidden="true"></div>
+            <div id="door-light" aria-hidden="true"></div>
+            <div class="door-panel left" aria-hidden="true"></div>
+            <div class="door-panel right" aria-hidden="true"></div>
 
-      <div class="terminal-prompt-box">
-        <div class="terminal-header">[ GATEKEEPER_PROTOCOL ]</div>
-        <div class="cli-line">
-          <pre id="cli-type-output" class="cli-text"></pre><span class="cli-cursor" aria-hidden="true">█</span>
+            <div class="nexus-wrapper" id="nexus-wrap">
+              <div class="crosshair" aria-hidden="true">
+                <span class="ch-h"></span>
+                <span class="ch-v"></span>
+                <span class="ch-ring"></span>
+                <span class="ch-ring outer"></span>
+              </div>
+              <div class="core-glow" aria-hidden="true"></div>
+              <img
+                id="nexusImg"
+                class="nexus-figure"
+                src="assets/divine-apparition.png"
+                alt="Divine Apparition — GhostWire nexus"
+                draggable="false"
+              />
+            </div>
+          </div>
+
+          <div class="terminal-prompt-box" id="intro-ui-panel">
+            <div class="terminal-header">[ GATEKEEPER_PROTOCOL ]</div>
+            <div class="cli-line">
+              <pre id="cli-type-output" class="cli-text"></pre><span class="cli-cursor" aria-hidden="true">█</span>
+            </div>
+            <button class="terminal-btn intro-proceed" id="proceedBtn" type="button" disabled>
+              <span class="btn-glitch-text" data-text="[ ACCEPT & PROCEED ]">[ ACCEPT &amp; PROCEED ]</span>
+              <span class="btn-subtext">// SINGLE CLICK AUTHORIZATION</span>
+            </button>
+          </div>
         </div>
-        <button class="terminal-btn intro-proceed" id="proceedBtn" type="button" disabled>
-          <span class="btn-glitch-text" data-text="[ ACCEPT & PROCEED ]">[ ACCEPT &amp; PROCEED ]</span>
-          <span class="btn-subtext">// SINGLE CLICK AUTHORIZATION</span>
-        </button>
       </div>
     </div>
+
+    <div id="intro-flash" aria-hidden="true"></div>
   </div>
 
   <!-- Ambient audio toggle -->

@@ -1,10 +1,12 @@
 /**
  * GhostWire intro gate — locked Data Nexus screen.
  *
- * Based on Example/ghostwire_intro.html, polished per Example/themeUpdate.md:
+ * Based on Example/ghostwire_intro.html + Example/threshold_sequence.html,
+ * polished per Example/themeUpdate.md:
  * HUD brackets + top bar, full-viewport ASCII streams into the center figure,
- * ambient hex matrix, crosshair reticle, humanized typewriter, and a Continue
- * button that is the *only* way past the gate (no skip / no auto-dismiss).
+ * gothic doorway, humanized typewriter, and a Continue button that is the
+ * *only* way past the gate. Accept triggers the threshold exit: figure fade →
+ * doors open → perspective zoom → crimson flash → reveal app.
  */
 
 const ASCII_CHARS = '0123456789ABCDEF<>[]//::--++==$$';
@@ -178,7 +180,6 @@ export function playIntro(onComplete) {
     const output = document.getElementById('cli-type-output');
     const proceedBtn = document.getElementById('proceedBtn');
     const hexHost = document.getElementById('hex-matrix');
-    const nexusImg = document.getElementById('nexusImg');
 
     if (!overlay || !canvas || !output || !proceedBtn) {
       onComplete?.();
@@ -207,6 +208,13 @@ export function playIntro(onComplete) {
     }
 
     let done = false;
+    const statusEl = document.getElementById('intro-status');
+    const doorWrap = document.getElementById('door-wrap');
+    const nexusWrap = document.getElementById('nexus-wrap');
+    const uiPanel = document.getElementById('intro-ui-panel');
+    const scene = document.getElementById('intro-scene');
+    const flash = document.getElementById('intro-flash');
+
     const finish = () => {
       if (done) return;
       done = true;
@@ -215,24 +223,43 @@ export function playIntro(onComplete) {
       const label = proceedBtn.querySelector('.btn-glitch-text');
       if (label) label.textContent = '[ ACCESS GRANTED ]';
       proceedBtn.classList.add('granted');
+      if (statusEl) statusEl.textContent = 'AUTHORIZED';
 
-      if (nexusImg) {
-        nexusImg.style.transform = 'scale(1.08)';
-        nexusImg.style.filter = 'drop-shadow(0 0 25px rgba(208, 18, 18, 0.9))';
-      }
-
-      setTimeout(() => {
-        overlay.classList.add('gate-dismissed');
-        document.body.classList.remove('intro-locked');
-      }, 280);
-
-      setTimeout(() => {
+      const tearDown = () => {
         stream?.stop();
         overlay.classList.add('gate-removed');
         overlay.remove();
+        document.body.classList.remove('intro-locked');
         onComplete?.();
         resolve();
-      }, 1100);
+      };
+
+      // Reduced motion: quick fade, no door/zoom theatrics.
+      if (reduced) {
+        overlay.classList.add('gate-dismissed');
+        setTimeout(tearDown, 450);
+        return;
+      }
+
+      // Threshold sequence (from Example/threshold_sequence.html):
+      // 1) fade UI + figure  2) open door  3) zoom through  4) flash  5) reveal app
+      uiPanel?.classList.add('threshold-hidden');
+      nexusWrap?.classList.add('fading');
+      canvas.style.transition = 'opacity 0.8s ease';
+      canvas.style.opacity = '0';
+
+      setTimeout(() => doorWrap?.classList.add('open'), 900);
+      setTimeout(() => {
+        scene?.classList.add('zooming');
+        overlay.classList.add('gate-dismissed');
+      }, 1500);
+      setTimeout(() => flash?.classList.add('on'), 3000);
+      setTimeout(() => {
+        overlay.classList.add('threshold-pass');
+        document.body.classList.remove('intro-locked');
+      }, 3400);
+      setTimeout(() => flash?.classList.remove('on'), 3900);
+      setTimeout(tearDown, 4500);
     };
 
     typeWithHumanRhythm(output, TYPE_TEXT, reduced).then(() => {

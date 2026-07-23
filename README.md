@@ -26,13 +26,13 @@ The front-end design of GhostWire rejects clean, sterile modern UI trends in fav
 ### 1b. The Boot Intro — Locked Data Nexus Gate
 On every page load a full-screen **gate** blocks the app until the operator clicks **Accept & Proceed** (`frontend/js/ui/intro.js`). There is no skip shortcut and no auto-dismiss.
 
-*   **Central figure:** `frontend/assets/divine-apparition.png` (from `Example/Divine_Apparition-removebg-preview.png`) with a breathing glow and target reticle behind it.
+*   **Central figure:** `frontend/assets/divine-apparition.png` (from `Example/Divine_Apparition-removebg-preview.png`) inside a gothic doorway with breathing glow and target reticle.
 *   **Full-viewport ASCII stream:** Characters spawn off all four edges and converge on the figure (theme polish from `Example/themeUpdate.md`).
 *   **HUD framing:** Corner brackets (`┌ ┐ └ ┘`), top status bar (`GHOSTWIRE // SYS_NODE | STATUS: PENDING | AUTH: REQUIRED`), faint scrolling hex matrix, scanlines + grid.
 *   **Humanized typewriter:** Warning copy types with punctuation pauses and hesitations; the Continue button only appears when typing finishes.
-*   **Tear-away exit:** Split panels slide outward and the core fades, then auth / portal / console may proceed.
+*   **Threshold exit:** On Accept — figure fades, doors open, perspective zooms through the doorway, crimson flash, then the app is revealed (`Example/threshold_sequence.html`).
 
-Layout inspiration: `Example/ghostwire_intro.html`.
+Layout inspiration: `Example/ghostwire_intro.html` + `Example/threshold_sequence.html`.
 
 ### 2. The Hero Component: The Surveillance Mesh
 The landing page displays a live, interactive vector/ASCII canvas representing a living network:
