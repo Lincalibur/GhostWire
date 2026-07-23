@@ -215,6 +215,20 @@ export function playIntro(onComplete) {
     const scene = document.getElementById('intro-scene');
     const flash = document.getElementById('intro-flash');
 
+    /**
+     * Aim the perspective zoom at the geometric center of the doorway
+     * (not the bottom / terminal area of the scene).
+     */
+    const aimZoomAtDoor = () => {
+      if (!scene || !doorWrap) return;
+      const s = scene.getBoundingClientRect();
+      const d = doorWrap.getBoundingClientRect();
+      if (!s.width || !s.height) return;
+      const ox = (((d.left + d.width / 2) - s.left) / s.width) * 100;
+      const oy = (((d.top + d.height / 2) - s.top) / s.height) * 100;
+      scene.style.transformOrigin = `${ox.toFixed(2)}% ${oy.toFixed(2)}%`;
+    };
+
     const finish = () => {
       if (done) return;
       done = true;
@@ -241,8 +255,8 @@ export function playIntro(onComplete) {
         return;
       }
 
-      // Threshold sequence (from Example/threshold_sequence.html):
-      // 1) fade UI + figure  2) open door  3) zoom through  4) flash  5) reveal app
+      // Threshold sequence:
+      // 1) fade UI + figure  2) open door  3) zoom into door center  4) black fade  5) reveal app
       uiPanel?.classList.add('threshold-hidden');
       nexusWrap?.classList.add('fading');
       canvas.style.transition = 'opacity 0.8s ease';
@@ -250,9 +264,12 @@ export function playIntro(onComplete) {
 
       setTimeout(() => doorWrap?.classList.add('open'), 900);
       setTimeout(() => {
+        aimZoomAtDoor();
+        // Force reflow so the new transform-origin is applied before zooming.
+        void scene?.offsetWidth;
         scene?.classList.add('zooming');
-        overlay.classList.add('gate-dismissed');
       }, 1500);
+      setTimeout(() => overlay.classList.add('gate-dismissed'), 2200);
       setTimeout(() => flash?.classList.add('on'), 3000);
       setTimeout(() => {
         overlay.classList.add('threshold-pass');

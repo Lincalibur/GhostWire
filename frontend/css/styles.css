@@ -682,14 +682,15 @@ body.intro-locked {
   display: flex;
   align-items: center;
   justify-content: center;
-  transform-style: preserve-3d;
-  transform-origin: 50% 42%;
-  transition: transform 2.2s cubic-bezier(0.75, 0, 0.9, 1), filter 2.2s ease-in;
   width: 100%;
+  transform-style: preserve-3d;
+  /* Default; JS retargets this to the door center before zooming */
+  transform-origin: 50% 30%;
+  transition: transform 2.2s cubic-bezier(0.75, 0, 0.9, 1), filter 2.2s ease-in;
 }
 #intro-scene.zooming {
-  transform: translateZ(2400px);
-  filter: blur(6px) brightness(2.2);
+  transform: translateZ(2200px) scale(1.15);
+  filter: blur(5px) brightness(1.2);
 }
 
 /* Gothic doorway around the nexus figure */
@@ -969,15 +970,15 @@ body.intro-locked {
   pointer-events: none !important;
 }
 
-/* Crimson / white threshold flash */
+/* Black threshold pass-through (no crimson flash) */
 #intro-flash {
   position: absolute;
   inset: 0;
   z-index: 200;
-  background: radial-gradient(circle, #ffe6e6 0%, #d01212 55%, #050505 100%);
+  background: #000;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.9s ease;
+  transition: opacity 0.85s ease;
 }
 #intro-flash.on {
   opacity: 1;
