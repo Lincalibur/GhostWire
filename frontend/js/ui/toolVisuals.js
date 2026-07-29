@@ -1,6 +1,7 @@
 /**
- * Visual metadata for the brutalist recon tool cards.
- * Maps connector ids → cutout art, background typography, and copy.
+ * Visual metadata for the RECON_ARSENAL status cards. Maps connector ids →
+ * cutout art, background typography, and copy. Purely a status display now
+ * (see console.js) — the intake form drives execution, not these cards.
  * Assets live in /assets/tools/ (sourced from Example/).
  */
 export const TOOL_VISUALS = {

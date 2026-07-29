@@ -2,23 +2,42 @@ import { getRuntimeConfig } from './config.js';
 import { staticApi } from './staticApi.js';
 
 const BASE = '/api';
+const DEFAULT_TIMEOUT_MS = 15000;
 
 /**
  * Perform a JSON API request against the GhostWire backend.
- * Credentials (the session cookie) are always included.
+ * Credentials (the session cookie) are always included. The request is
+ * aborted after `timeoutMs` so a stalled connector/network hang surfaces as
+ * a clear timeout error instead of leaving a caller waiting forever.
  *
  * @param {string} path e.g. "/auth/login"
- * @param {{ method?: string, body?: object }} [options]
+ * @param {{ method?: string, body?: object, timeoutMs?: number }} [options]
  * @returns {Promise<any>} parsed JSON response
- * @throws {Error} with `.code` and `.status` on non-2xx responses
+ * @throws {Error} with `.code` ('TIMEOUT' on abort, otherwise the server's error code) and `.status`
  */
-async function request(path, { method = 'GET', body } = {}) {
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    credentials: 'include',
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+async function request(path, { method = 'GET', body, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      method,
+      credentials: 'include',
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      const timeoutErr = new Error(`Request timed out after ${Math.round(timeoutMs / 1000)}s.`);
+      timeoutErr.code = 'TIMEOUT';
+      throw timeoutErr;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 
   let payload = null;
   try {
@@ -49,7 +68,8 @@ const liveApi = {
 
   recon: {
     modules: () => request('/recon/modules'),
-    query: (module, query) => request('/recon/query', { method: 'POST', body: { module, query } }),
+    query: (module, query) =>
+      request('/recon/query', { method: 'POST', body: { module, query }, timeoutMs: 25000 }),
     history: () => request('/recon/history'),
   },
 };

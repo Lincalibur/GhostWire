@@ -78,21 +78,6 @@
   <!-- Ambient audio toggle -->
   <button id="audio-prompt" type="button">AUDIO: OFF</button>
 
-  <!-- Background surveillance mesh -->
-  <div id="hero">
-    <pre id="bg-skull" aria-hidden="true"></pre>
-    <div id="network">
-      <canvas id="bg-canvas"></canvas>
-      <div class="node small" style="left: 15%; top: 22%;"></div>
-      <div class="node small" style="left: 12%; top: 68%;"></div>
-      <div class="node small hide-mobile" style="left: 85%; top: 26%;"></div>
-      <div class="node small hide-mobile" style="left: 88%; top: 72%;"></div>
-      <div class="node small" style="left: 32%; top: 82%;"></div>
-      <div class="node small" style="left: 68%; top: 84%;"></div>
-      <div class="node center" style="left: 50%; top: 48%;"></div>
-    </div>
-  </div>
-
   <div id="screen">
     <!-- ── Gatekeeper portal ─────────────────────────────── -->
     <section class="portal-container" id="login-view">
@@ -163,30 +148,78 @@
         <div class="window-body">
           <div class="stat-line">ID: <span id="active-op-handle" class="accent">UNKNOWN</span></div>
           <div class="stat-line">AUTH: LEVEL_4</div>
+          <button class="terminal-btn small" id="btn-generate-report" type="button">Generate Audit Report</button>
           <button class="terminal-btn small" id="btn-logout" type="button">Terminate Session</button>
         </div>
       </div>
 
       <div class="panel-window p-engines">
-        <div class="window-header">RECON_ARSENAL</div>
-        <div class="window-body tool-gallery-wrap">
-          <div class="tool-gallery" id="tool-gallery"></div>
+        <div class="window-header">RECON_ARSENAL // TARGET INTAKE</div>
+        <div class="window-body intake-wrap">
+          <div class="arsenal-split">
+            <div class="tool-gallery" id="tool-gallery-left"></div>
+
+            <div class="intake-grid" id="intake-grid">
+              <div class="form-group intake-field">
+                <label class="form-label" for="intake-email">
+                  EMAIL
+                  <span class="intake-caveat">(checked as a k-anonymity credential lookup, not a breach-by-email search)</span>
+                </label>
+                <div class="terminal-input-wrapper bordered">
+                  <span class="terminal-input-prefix">&gt;</span>
+                  <input type="text" id="intake-email" class="terminal-input" placeholder="e.g., name@example.com" autocomplete="off" />
+                </div>
+                <span class="intake-status" id="intake-status-v0id">IDLE</span>
+              </div>
+
+              <div class="form-group intake-field">
+                <label class="form-label" for="intake-username">USERNAME</label>
+                <div class="terminal-input-wrapper bordered">
+                  <span class="terminal-input-prefix">&gt;</span>
+                  <input type="text" id="intake-username" class="terminal-input" placeholder="e.g., net_phantom" autocomplete="off" />
+                </div>
+                <span class="intake-status" id="intake-status-grimnir">IDLE</span>
+              </div>
+
+              <div class="form-group intake-field">
+                <label class="form-label" for="intake-domain">DOMAIN</label>
+                <div class="terminal-input-wrapper bordered">
+                  <span class="terminal-input-prefix">&gt;</span>
+                  <input type="text" id="intake-domain" class="terminal-input" placeholder="e.g., example.com" autocomplete="off" />
+                </div>
+                <span class="intake-status" id="intake-status-mspect">IDLE</span>
+              </div>
+
+              <div class="form-group intake-field">
+                <label class="form-label" for="intake-org">ORG / KEYWORD</label>
+                <div class="terminal-input-wrapper bordered">
+                  <span class="terminal-input-prefix">&gt;</span>
+                  <input type="text" id="intake-org" class="terminal-input" placeholder="e.g., acme" autocomplete="off" />
+                </div>
+                <span class="intake-status" id="intake-status-wiretap">IDLE</span>
+              </div>
+            </div>
+
+            <div class="tool-gallery" id="tool-gallery-right"></div>
+          </div>
+
+          <button class="terminal-btn" id="btn-run-audit" type="button">Run Full Audit</button>
+          <div class="scan-loader" id="scan-loader"></div>
+          <div class="module-state">SWEEP STATE: <span id="audit-status" class="accent">READY</span></div>
         </div>
       </div>
 
       <div class="panel-window p-module">
-        <div class="window-header" id="module-title">MODULE</div>
+        <div class="window-header">Wraith // METADATA EXTRACTOR</div>
         <div class="window-body">
           <div class="form-group">
-            <label class="form-label" id="module-input-label" for="recon-query">QUERY</label>
-            <div class="terminal-input-wrapper bordered">
-              <span class="terminal-input-prefix">&gt;</span>
-              <input type="text" id="recon-query" class="terminal-input" placeholder="Enter query..." />
+            <label class="form-label">IMAGE FILE</label>
+            <div class="dropzone" id="metadata-dropzone">
+              <input type="file" id="metadata-file-input" accept="image/jpeg" hidden />
+              <span class="dropzone-text">[ DROP IMAGE OR CLICK TO SELECT ]</span>
             </div>
+            <div class="metadata-result hidden" id="metadata-result"></div>
           </div>
-          <button class="terminal-btn" id="btn-run-query" type="button">Execute Scan Module</button>
-          <div class="scan-loader" id="scan-loader"></div>
-          <div class="module-state">MODULE STATE: <span id="module-status" class="accent">READY</span></div>
         </div>
       </div>
 
@@ -197,6 +230,17 @@
         </div>
       </div>
     </section>
+  </div>
+
+  <!-- Audit report overlay -->
+  <div id="report-overlay" class="report-overlay hidden">
+    <div class="report-window">
+      <div class="window-header">
+        AUDIT REPORT
+        <button class="report-close" id="btn-close-report" type="button" aria-label="Close report">&times;</button>
+      </div>
+      <div class="window-body" id="report-body"></div>
+    </div>
   </div>
 
   <script type="module" src="js/main.js"></script>

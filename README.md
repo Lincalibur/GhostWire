@@ -87,10 +87,19 @@ ENTER OPERATOR ID : _
 
 Once decrypted, the interface drops the user into an integrated suite of command-line and graphical recon modules:
 
-*   **`µspect` (Target Footprinting):** Resolves structured queries on domain assets, hosting histories, and active network topologies.
+*   **`µspect` (Target Footprinting):** Resolves structured queries on domain assets, hosting histories, and active network topologies. Also cross-references Certificate Transparency logs (crt.sh) to surface historical subdomains.
 *   **`WireTap` (Signal Leakage Sniffer):** Discovers leaky metadata, exposed configuration fragments, and exposed cloud storage buckets.
 *   **`Grimnir` (Alias Tracker):** Traverses structured social handles, developer directories, and public code repositories to map digital identities.
 *   **`v0id` (Breach Archive Indexer):** Safely cross-references known breach databases to highlight weak security postures and exposed account credentials.
+*   **`Wraith` (Metadata Extractor):** Client-side only — extracts EXIF (camera model, capture date, GPS coordinates) from an uploaded photo and lets the operator download a metadata-stripped copy. The original file is never uploaded to the server; parsing and sanitization both happen in-browser via a vendored EXIF reader (`frontend/js/vendor/miniExif.js`) and an HTML5 canvas re-encode.
+
+### Step-by-step audit workflow
+
+The console now tracks findings across every module you run in a single session (in-memory + `sessionStorage`, never sent to the backend):
+
+1. Run any combination of `µspect`, `v0id`, `Grimnir`, `WireTap`, and `Wraith` against your own identifiers.
+2. Each completed scan folds its findings into a running **audit profile** (`frontend/js/state/auditProfile.js`).
+3. Click **`GENERATE AUDIT REPORT`** (operator meta panel) for a categorized summary: an overall **risk score** (0–100), findings grouped by category (credential exposure, cloud leakage, associated accounts, infrastructure exposure, metadata leakage), and an actionable remediation checklist with links.
 
 ---
 
@@ -133,7 +142,9 @@ GhostWire/
     └── js/
         ├── main.js         # entrypoint
         ├── api.js          # typed fetch client
-        ├── ui/             # portal (login/OTP), console, feed
+        ├── ui/             # portal (login/OTP), console, feed, report, metadataTool
+        ├── state/          # auditProfile.js — cross-module findings aggregation + risk scoring
+        ├── vendor/         # miniExif.js — dependency-free EXIF/GPS reader
         └── visuals/        # asciiEye, skullArt, circuitField, audio, mesh (+ intro in ui/)
 ```
 
@@ -248,7 +259,7 @@ Dev conveniences are **hard-disabled** whenever `NODE_ENV=production`, regardles
 ### Recon connectors
 | Module     | Purpose                    | Upstream (all passive/safe)                     |
 | ---------- | -------------------------- | ----------------------------------------------- |
-| `µspect`   | Domain footprinting        | Cloudflare DNS-over-HTTPS                        |
+| `µspect`   | Domain footprinting        | Cloudflare DNS-over-HTTPS + crt.sh (Cert. Transparency) |
 | `WireTap`  | Cloud bucket exposure      | Passive S3 endpoint probing (GrayhatWarfare opt) |
 | `Grimnir`  | Username / alias discovery | HTTP status probing of public profiles          |
 | `v0id`     | Breach / credential check  | HaveIBeenPwned range API (k-anonymity)          |
