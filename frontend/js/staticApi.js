@@ -41,47 +41,81 @@ function delay(ms = 280) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function sampleLines(module, query) {
+/** Sample console lines + structured data per module, shaped like the live connectors. */
+function sampleResult(module, query) {
   const q = query.trim();
   switch (module) {
-    case 'mspect':
-      return [
-        `  -> Resolving infrastructure records for ${q}...`,
-        '  -> A   : 93.184.216.34',
-        '  -> AAAA: 2606:2800:220:1:248:1893:25c8:1946',
-        '  -> MX  : 10 mail.example.net.',
-        '  -> NS  : a.iana-servers.net., b.iana-servers.net.',
-        '  -> TXT : "v=spf1 -all"',
-        '  -> [ STATIC DEMO ] Live DoH disabled on GitHub Pages.',
-      ];
+    case 'mspect': {
+      const subdomains = [`dev.${q}`, `mail.${q}`, `www.${q}`];
+      return {
+        lines: [
+          `  -> Resolving infrastructure records for ${q}...`,
+          '  -> A   : 93.184.216.34',
+          '  -> AAAA: 2606:2800:220:1:248:1893:25c8:1946',
+          '  -> MX  : 10 mail.example.net.',
+          '  -> NS  : a.iana-servers.net., b.iana-servers.net.',
+          '  -> TXT : "v=spf1 -all"',
+          '  -> Cross-referencing Certificate Transparency logs...',
+          `  -> ${subdomains.length} subdomain(s) surfaced via issued certificates:`,
+          ...subdomains.map((s) => `  ->   ${s}`),
+          '  -> [ STATIC DEMO ] Live DoH / crt.sh disabled on GitHub Pages.',
+        ],
+        data: {
+          domain: q,
+          records: { A: ['93.184.216.34'], AAAA: [], MX: ['10 mail.example.net.'], NS: [], TXT: [] },
+          subdomains,
+        },
+      };
+    }
     case 'v0id':
-      return [
-        '  -> Computing SHA-1 digest (k-anonymity range query)...',
-        '  -> MATCH: exposure confirmed in known breach corpora.',
-        '  -> Seen 12,481 time(s) across indexed dumps.',
-        '  -> STATUS: CRITICAL — credential compromised. Rotate immediately.',
-        '  -> [ STATIC DEMO ] HIBP upstream disabled on GitHub Pages.',
+      return {
+        lines: [
+          '  -> Computing SHA-1 digest (k-anonymity range query)...',
+          '  -> MATCH: exposure confirmed in known breach corpora.',
+          '  -> Seen 12,481 time(s) across indexed dumps.',
+          '  -> STATUS: CRITICAL — credential compromised. Rotate immediately.',
+          '  -> [ STATIC DEMO ] HIBP upstream disabled on GitHub Pages.',
+        ],
+        data: { prefix: 'ABCDE', exposed: true, count: 12481 },
+      };
+    case 'grimnir': {
+      const results = [
+        { platform: 'GitHub', found: true, status: 200 },
+        { platform: 'Reddit', found: false, status: 404 },
+        { platform: 'GitLab', found: true, status: 200 },
+        { platform: 'Keybase', found: false, status: 404 },
       ];
-    case 'grimnir':
-      return [
-        `  -> Traversing public directories for [${q}]...`,
-        '  -> [FOUND]  GitHub',
-        '  -> [clear]  Reddit (404)',
-        '  -> [FOUND]  GitLab',
-        '  -> [clear]  Keybase (404)',
-        '  -> Trace complete. 2/4 surface(s) matched.',
-        '  -> [ STATIC DEMO ] Live probes disabled on GitHub Pages.',
+      return {
+        lines: [
+          `  -> Traversing public directories for [${q}]...`,
+          '  -> [FOUND]  GitHub',
+          '  -> [clear]  Reddit (404)',
+          '  -> [FOUND]  GitLab',
+          '  -> [clear]  Keybase (404)',
+          '  -> Trace complete. 2/4 surface(s) matched.',
+          '  -> [ STATIC DEMO ] Live probes disabled on GitHub Pages.',
+        ],
+        data: { handle: q, results },
+      };
+    }
+    case 'wiretap': {
+      const results = [
+        { bucket: `${q}-backup`, url: `https://${q}-backup.s3.amazonaws.com/`, status: 403, state: 'exists-private' },
+        { bucket: `${q}-assets`, url: `https://${q}-assets.s3.amazonaws.com/`, status: 200, state: 'OPEN' },
       ];
-    case 'wiretap':
-      return [
-        `  -> Enumerating cloud-bucket namespace for [${q}]...`,
-        `  -> [exists] ${q}-backup — access denied (private)`,
-        `  -> [LEAK]   ${q}-assets — PUBLIC LISTING`,
-        '  -> Sweep complete. 1 open bucket(s) flagged.',
-        '  -> [ STATIC DEMO ] Live S3 probes disabled on GitHub Pages.',
-      ];
+      return {
+        lines: [
+          `  -> Enumerating cloud-bucket namespace for [${q}]...`,
+          `  -> [exists] ${q}-backup — access denied (private)`,
+          `  -> [LEAK]   ${q}-assets — PUBLIC LISTING`,
+          '  -> Sweep complete. 1 open bucket(s) flagged.',
+          '  -> [ STATIC DEMO ] Live S3 probes disabled on GitHub Pages.',
+        ],
+        data: { keyword: q, results },
+      };
+    }
     default:
-      return [`  [x] Unknown module in static demo: ${module}`];
+      return { lines: [`  [x] Unknown module in static demo: ${module}`], data: {} };
   }
 }
 
@@ -137,8 +171,8 @@ export const staticApi = {
     },
     query: async (module, query) => {
       await delay(600);
-      const lines = sampleLines(module, query);
-      const payload = { module, query, lines, data: { staticDemo: true } };
+      const { lines, data } = sampleResult(module, query);
+      const payload = { module, query, lines, data };
       history.unshift({
         toolUsed: module,
         searchQuery: query,

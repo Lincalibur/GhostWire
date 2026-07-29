@@ -1,9 +1,10 @@
 import { api } from './api.js';
-import { initMesh, refreshMesh } from './visuals/mesh.js';
 import { AmbientHum } from './visuals/audio.js';
 import { initPortal } from './ui/portal.js';
 import { initConsole } from './ui/console.js';
 import { playIntro } from './ui/intro.js';
+import { initMetadataTool } from './ui/metadataTool.js';
+import { initReportPanel } from './ui/report.js';
 
 /** Swap from the login portal to the authenticated console view. */
 function enterConsole(handle) {
@@ -25,7 +26,6 @@ function exitConsole() {
   document.getElementById('operator-id').value = '';
   document.getElementById('operator-pass').value = '';
   document.getElementById('otp-token').value = '';
-  refreshMesh();
 }
 
 /** Wire the ambient audio toggle button. */
@@ -79,10 +79,11 @@ function enableDevAffordances(health) {
 
 /** Application entrypoint. */
 async function main() {
-  // Mesh + portal boot behind the gate; auth waits until Continue.
-  initMesh();
+  // Portal boots behind the gate; auth waits until Continue.
   initAudioToggle();
   initPortal(enterConsole);
+  initMetadataTool();
+  initReportPanel();
 
   await playIntro();
 

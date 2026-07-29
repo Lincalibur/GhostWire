@@ -1,100 +1,140 @@
 import { api } from '../api.js';
 import { writeFeed } from './feed.js';
 import { AsciiLoader } from './loader.js';
-import { refreshMesh } from '../visuals/mesh.js';
+import { setTarget, recordResult } from '../state/auditProfile.js';
 import { visualsFor } from './toolVisuals.js';
 
+/** Intake field id → connector id, in the order the fields are displayed. */
+const FIELD_MODULE_MAP = [
+  { fieldId: 'intake-email', moduleId: 'v0id' },
+  { fieldId: 'intake-username', moduleId: 'grimnir' },
+  { fieldId: 'intake-domain', moduleId: 'mspect' },
+  { fieldId: 'intake-org', moduleId: 'wiretap' },
+];
+
+/** RECON_ARSENAL status cards, split 2/2 either side of the intake form. */
+const CARD_COLUMNS = {
+  'tool-gallery-left': ['mspect', 'v0id'],
+  'tool-gallery-right': ['grimnir', 'wiretap'],
+};
+
 let modules = [];
-let activeModule = null;
 let loader = null;
 
 /**
- * Render brutalist text-behind-subject tool cards for each recon module.
- * @param {HTMLElement} galleryEl
+ * Render the read-only RECON_ARSENAL status cards — no click handler, they
+ * just reflect each module's sweep state as `runFullAudit()` progresses.
  * @returns {void}
  */
-function renderCards(galleryEl) {
-  galleryEl.innerHTML = '';
-  modules.forEach((mod, i) => {
-    const v = visualsFor(mod.id);
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'tool-card' + (i === 0 ? ' active' : '');
-    card.dataset.moduleId = mod.id;
-    card.setAttribute('aria-label', `Launch ${v.title}`);
-    card.innerHTML = `
-      <div class="card-bg" aria-hidden="true"></div>
-      <div class="bg-text" aria-hidden="true">${v.bgText}</div>
-      <img class="subject-img" src="${v.image}" alt="${v.alt}" draggable="false" />
-      <div class="card-info">
-        <span class="tool-id">[ ${v.toolId} ]</span>
-        <h3 class="tool-title">${v.title}</h3>
-        <p class="tool-desc">${v.desc}</p>
-        <span class="tool-btn">LAUNCH MODULE &rarr;</span>
-      </div>
-    `;
-    card.addEventListener('click', () => selectModule(mod.id, card, galleryEl));
-    galleryEl.appendChild(card);
-  });
-}
-
-/**
- * Activate a module: highlight its card and update the query panel.
- * @param {string} id
- * @param {HTMLElement} cardEl
- * @param {HTMLElement} galleryEl
- * @returns {void}
- */
-function selectModule(id, cardEl, galleryEl) {
-  activeModule = modules.find((m) => m.id === id);
-  if (!activeModule) return;
-
-  galleryEl.querySelectorAll('.tool-card').forEach((c) => c.classList.remove('active'));
-  cardEl.classList.add('active');
-
-  const v = visualsFor(activeModule.id);
-  document.getElementById('module-title').textContent = activeModule.title;
-  document.getElementById('module-input-label').textContent = activeModule.inputLabel;
-  const input = document.getElementById('recon-query');
-  input.placeholder = activeModule.placeholder;
-  input.value = '';
-  document.getElementById('module-status').textContent = 'READY';
-  writeFeed(`[>] MODULE ARMED: ${v.toolId} // ${activeModule.label}`);
-}
-
-/**
- * Execute the active module against the current query input.
- * @returns {Promise<void>}
- */
-async function runQuery() {
-  if (!activeModule) return;
-  const input = document.getElementById('recon-query');
-  const runBtn = document.getElementById('btn-run-query');
-  const query = input.value.trim();
-  const statusEl = document.getElementById('module-status');
-  if (!query) return;
-
-  statusEl.textContent = 'SCANNING';
-  runBtn.disabled = true;
-  loader?.start(`SCANNING ${query.toUpperCase()}`);
-  writeFeed(`[!] EXEC: ${activeModule.label} scan on [${query}]...`);
-
-  try {
-    const res = await api.recon.query(activeModule.id, query);
-    writeFeed(res.lines);
-    statusEl.textContent = 'COMPLETE';
-    loader?.stop('▓ SCAN COMPLETE');
-  } catch (err) {
-    writeFeed(`  [x] ${err.message}`);
-    statusEl.textContent = err.code === 'RECON_RATE_LIMITED' ? 'THROTTLED' : 'ERROR';
-    loader?.stop('▒ SCAN ABORTED');
-  } finally {
-    runBtn.disabled = false;
+function renderStatusCards() {
+  for (const [galleryId, moduleIds] of Object.entries(CARD_COLUMNS)) {
+    const galleryEl = document.getElementById(galleryId);
+    if (!galleryEl) continue;
+    galleryEl.innerHTML = '';
+    for (const moduleId of moduleIds) {
+      const v = visualsFor(moduleId);
+      const card = document.createElement('div');
+      card.className = 'tool-card';
+      card.dataset.moduleId = moduleId;
+      card.innerHTML = `
+        <div class="card-bg" aria-hidden="true"></div>
+        <div class="bg-text" aria-hidden="true">${v.bgText}</div>
+        <img class="subject-img" src="${v.image}" alt="${v.alt}" draggable="false" />
+        <div class="card-info">
+          <span class="tool-id">[ ${v.toolId} ]</span>
+          <h3 class="tool-title">${v.title}</h3>
+          <p class="tool-desc">${v.desc}</p>
+          <span class="tool-status" data-card-status>IDLE</span>
+        </div>
+      `;
+      galleryEl.appendChild(card);
+    }
   }
 }
 
 /**
- * Boot the console: load modules, wire controls, and populate the feed.
+ * @param {string} moduleId
+ * @returns {{ id: string, label: string }}
+ */
+function moduleMeta(moduleId) {
+  return modules.find((m) => m.id === moduleId) || { id: moduleId, label: moduleId };
+}
+
+/**
+ * @param {string} moduleId
+ * @param {string} text
+ * @param {string} [cls]
+ * @returns {void}
+ */
+function setFieldStatus(moduleId, text, cls) {
+  const el = document.getElementById(`intake-status-${moduleId}`);
+  if (el) {
+    el.textContent = text;
+    el.className = 'intake-status' + (cls ? ` ${cls}` : '');
+  }
+
+  const card = document.querySelector(`.tool-card[data-module-id="${moduleId}"]`);
+  if (card) {
+    card.className = 'tool-card' + (cls ? ` ${cls}` : '');
+    const statusEl = card.querySelector('[data-card-status]');
+    if (statusEl) statusEl.textContent = text;
+  }
+}
+
+/**
+ * Run every connector whose intake field is non-empty, sequentially,
+ * narrating progress to the console feed and folding each result into the
+ * shared audit profile. A failure in one module does not abort the rest.
+ * @returns {Promise<void>}
+ */
+async function runFullAudit() {
+  const runBtn = document.getElementById('btn-run-audit');
+  const statusEl = document.getElementById('audit-status');
+
+  const jobs = FIELD_MODULE_MAP.map(({ fieldId, moduleId }) => ({
+    moduleId,
+    query: document.getElementById(fieldId).value.trim(),
+  })).filter((j) => j.query);
+
+  if (!jobs.length) {
+    writeFeed('  [x] Enter at least one field before running the audit.');
+    return;
+  }
+
+  runBtn.disabled = true;
+  statusEl.textContent = 'RUNNING';
+  writeFeed(`[!] FULL AUDIT INITIATED // ${jobs.length} module(s) queued`);
+  setTarget(jobs.map((j) => j.query).join(' / '));
+
+  let hadError = false;
+  for (const job of jobs) {
+    const meta = moduleMeta(job.moduleId);
+    setFieldStatus(job.moduleId, 'SCANNING', 'scanning');
+    loader?.start(`SCANNING ${job.query.toUpperCase()}`);
+    writeFeed(`[!] EXEC: ${meta.label} scan on [${job.query}]...`);
+
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const res = await api.recon.query(job.moduleId, job.query);
+      writeFeed(res.lines);
+      recordResult(job.moduleId, job.query, res.data);
+      setFieldStatus(job.moduleId, 'COMPLETE', 'ok');
+    } catch (err) {
+      hadError = true;
+      writeFeed(`  [x] ${meta.label}: ${err.message}`);
+      const label =
+        err.code === 'RECON_RATE_LIMITED' ? 'THROTTLED' : err.code === 'TIMEOUT' ? 'TIMEOUT' : 'ERROR';
+      setFieldStatus(job.moduleId, label, 'alert');
+    }
+  }
+
+  loader?.stop(hadError ? '▒ SWEEP COMPLETE (WITH ERRORS)' : '▓ SWEEP COMPLETE');
+  statusEl.textContent = hadError ? 'COMPLETE (ERRORS)' : 'COMPLETE';
+  runBtn.disabled = false;
+}
+
+/**
+ * Boot the console: load connector metadata, wire controls, and populate the feed.
  * @param {string} handle authenticated operator handle
  * @param {() => void} onLogout
  * @returns {Promise<void>}
@@ -102,39 +142,27 @@ async function runQuery() {
 export async function initConsole(handle, onLogout) {
   document.getElementById('active-op-handle').textContent = handle.toUpperCase();
 
-  const galleryEl = document.getElementById('tool-gallery');
-  const runBtn = document.getElementById('btn-run-query');
-  const queryInput = document.getElementById('recon-query');
+  const runBtn = document.getElementById('btn-run-audit');
   const logoutBtn = document.getElementById('btn-logout');
   const loaderEl = document.getElementById('scan-loader');
   loader = loaderEl ? new AsciiLoader(loaderEl) : null;
 
-  // Panels are now visible — re-wire the circuit mesh to connect to them.
-  refreshMesh();
+  renderStatusCards();
 
   try {
     const res = await api.recon.modules();
     modules = res.modules;
-    renderCards(galleryEl);
-    activeModule = modules[0] || null;
-    if (activeModule) {
-      const first = galleryEl.querySelector('.tool-card');
-      if (first) {
-        // Silent initial select — avoid duplicate boot feed noise.
-        galleryEl.querySelectorAll('.tool-card').forEach((c) => c.classList.remove('active'));
-        first.classList.add('active');
-        document.getElementById('module-title').textContent = activeModule.title;
-        document.getElementById('module-input-label').textContent = activeModule.inputLabel;
-        queryInput.placeholder = activeModule.placeholder;
-        document.getElementById('module-status').textContent = 'READY';
-      }
-    }
   } catch (err) {
-    writeFeed(`  [x] Failed to load recon modules: ${err.message}`);
+    writeFeed(`  [x] Failed to load recon module metadata: ${err.message}`);
+    modules = [];
   }
 
-  runBtn.addEventListener('click', runQuery);
-  queryInput.addEventListener('keydown', (e) => e.key === 'Enter' && runQuery());
+  runBtn.addEventListener('click', runFullAudit);
+  FIELD_MODULE_MAP.forEach(({ fieldId }) => {
+    document.getElementById(fieldId)?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') runFullAudit();
+    });
+  });
   logoutBtn.addEventListener('click', async () => {
     try {
       await api.auth.logout();

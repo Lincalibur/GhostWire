@@ -80,37 +80,6 @@ body::after {
   box-shadow: 0 0 10px var(--red-glow);
 }
 
-/* ── Surveillance mesh ────────────────────────────────── */
-#hero {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  z-index: 1;
-}
-#network {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-#bg-canvas {
-  position: absolute;
-  inset: 0;
-  display: block;
-}
-.node {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-.node.center {
-  width: 280px;
-  height: 240px;
-}
-.node.small {
-  width: 130px;
-  height: 80px;
-}
-
 /* ── Portal ───────────────────────────────────────────── */
 .portal-container {
   position: relative;
@@ -253,7 +222,7 @@ body::after {
     'module  console    console';
   gap: 16px;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--bg);
 }
 
 .p-sys { grid-area: sys; }
@@ -342,48 +311,44 @@ body::after {
   50% { opacity: 0.85; }
 }
 
-/* ── Brutalist tool cards (text-behind-subject) ────────── */
-.tool-gallery-wrap {
-  padding: 12px !important;
-  overflow: hidden;
+/* ── RECON_ARSENAL: 3-column split — status cards flank the intake form.
+   Cards are read-only (the form drives execution) but keep the original
+   hover-lift/glow so the panel still feels alive. ─────────────────────── */
+.arsenal-split {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  gap: 20px;
+  align-items: stretch;
 }
 .tool-gallery {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 14px;
-  height: 100%;
-  min-height: 260px;
 }
-
 .tool-card {
   position: relative;
-  height: 100%;
-  min-height: 260px;
+  flex: 1;
+  min-height: 200px;
   background-color: var(--bg-dark);
   border: 1px solid #222;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 14px;
-  cursor: pointer;
-  text-align: left;
-  color: inherit;
-  font: inherit;
+  padding: 12px;
   transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 .tool-card:hover {
   border-color: var(--accent-red);
-  transform: translateY(-5px);
+  transform: translateY(-4px);
+  box-shadow: 0 0 16px rgba(208, 18, 18, 0.3);
 }
-.tool-card.active {
+.tool-card.scanning {
   border-color: var(--accent-red);
   box-shadow: 0 0 18px rgba(208, 18, 18, 0.35), inset 0 0 24px rgba(208, 18, 18, 0.12);
 }
-.tool-card:focus-visible {
-  outline: 2px solid var(--accent-red);
-  outline-offset: 2px;
-}
+.tool-card.ok { border-color: var(--red-dim); }
+.tool-card.alert { border-color: var(--accent-red); }
 
 /* Layer 1 — HUD grid */
 .card-bg {
@@ -401,11 +366,11 @@ body::after {
 /* Layer 2 — massive background typography */
 .bg-text {
   position: absolute;
-  top: 12%;
+  top: 10%;
   left: 50%;
   transform: translateX(-50%);
   font-family: Impact, 'Arial Black', sans-serif;
-  font-size: clamp(2.4rem, 4.2vw, 4.6rem);
+  font-size: clamp(1.8rem, 3vw, 3.2rem);
   font-weight: 900;
   color: rgba(255, 255, 255, 0.08);
   letter-spacing: 4px;
@@ -420,8 +385,8 @@ body::after {
   position: absolute;
   top: 0;
   left: 50%;
-  transform: translateX(-50%) scale(1);
-  height: 68%;
+  transform: translateX(-50%);
+  height: 58%;
   width: auto;
   max-width: 110%;
   object-fit: contain;
@@ -429,60 +394,97 @@ body::after {
   pointer-events: none;
   mix-blend-mode: screen;
   filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.8));
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s;
+  transition: filter 0.3s;
 }
 .tool-card:hover .subject-img,
-.tool-card.active .subject-img {
-  transform: translateX(-50%) scale(1.08);
+.tool-card.scanning .subject-img {
   filter: drop-shadow(0 0 15px rgba(208, 18, 18, 0.45));
+  transform: translateX(-50%) scale(1.05);
 }
 
-/* Layer 4 — tool info + CTA */
+/* Layer 4 — tool info + status */
 .card-info {
   position: relative;
   z-index: 3;
   margin-top: auto;
   background: linear-gradient(180deg, transparent 0%, rgba(10, 10, 10, 0.95) 38%);
-  padding-top: 28px;
+  padding-top: 22px;
   pointer-events: none;
 }
 .tool-id {
   font-family: var(--font);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   letter-spacing: 1px;
   color: var(--accent-red);
 }
 .tool-title {
   font-family: var(--font-gothic);
-  font-size: clamp(1.35rem, 1.8vw, 1.85rem);
+  font-size: clamp(1.05rem, 1.4vw, 1.4rem);
   font-weight: normal;
   color: var(--text-white);
-  margin: 4px 0 6px;
+  margin: 4px 0 5px;
   line-height: 1.1;
 }
 .tool-desc {
   font-family: var(--font);
-  font-size: 0.78rem;
-  line-height: 1.35;
+  font-size: 0.72rem;
+  line-height: 1.3;
   color: #888;
-  margin-bottom: 12px;
-  min-height: 2.6em;
+  margin-bottom: 10px;
+  min-height: 2.4em;
 }
-.tool-btn {
+.tool-status {
   display: inline-block;
   color: var(--text-white);
   font-family: var(--font);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   letter-spacing: 1px;
   border: 1px solid #333;
-  padding: 7px 11px;
-  transition: all 0.2s;
+  padding: 5px 9px;
 }
-.tool-card:hover .tool-btn,
-.tool-card.active .tool-btn {
+.tool-card.scanning .tool-status {
   background-color: var(--accent-red);
   border-color: var(--accent-red);
   color: #fff;
+}
+.tool-card.ok .tool-status { border-color: var(--ok); color: var(--ok); }
+.tool-card.alert .tool-status { border-color: #ff8a8a; color: #ff8a8a; }
+
+/* ── Target intake (full-audit sweep) ──────────────────── */
+.intake-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 14px !important;
+}
+.intake-grid {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+.intake-caveat {
+  display: block;
+  font-size: 10px;
+  font-weight: normal;
+  letter-spacing: 0.5px;
+  text-transform: none;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.intake-status {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+.intake-status.scanning { color: var(--red); }
+.intake-status.ok { color: var(--ok); }
+.intake-status.alert {
+  color: #ff8a8a;
+  text-shadow: 0 0 6px var(--red-glow);
 }
 
 /* Console feed */
@@ -506,28 +508,113 @@ body::after {
 
 .hidden { display: none !important; }
 
-/* ── Background ASCII skull daemon ────────────────────── */
-#bg-skull {
-  position: absolute;
-  top: 46%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  margin: 0;
-  font-family: var(--font);
-  font-weight: bold;
-  line-height: 1;
-  font-size: clamp(5px, 1.15vw, 11px);
-  color: var(--red);
-  white-space: pre;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.1;
-  text-shadow: 0 0 6px var(--red-glow);
-  animation: skull-breathe 6s ease-in-out infinite;
+/* ── Metadata Extractor (EXIF) ────────────────────────── */
+.dropzone {
+  border: 1px dashed var(--red-dim);
+  padding: 20px 12px;
+  margin-top: 6px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  transition: all 0.2s ease;
 }
-@keyframes skull-breathe {
-  0%, 100% { opacity: 0.06; }
-  50% { opacity: 0.15; }
+.dropzone:hover,
+.dropzone.drag {
+  border-color: var(--red);
+  color: var(--red);
+  background: var(--red-dim);
+  box-shadow: 0 0 10px var(--red-glow);
+}
+.metadata-result {
+  margin-top: 14px;
+  border-top: 1px dashed var(--red-dim);
+  padding-top: 12px;
+}
+.metadata-result .stat-line { font-size: 13px; }
+.purge-btn {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+.report-link {
+  color: var(--red);
+  text-decoration: underline;
+}
+.report-link:hover { color: var(--text); }
+
+/* ── Audit report overlay ──────────────────────────────── */
+.report-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  background: rgba(0, 0, 0, 0.86);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.report-window {
+  width: min(720px, 100%);
+  max-height: 86vh;
+  background: rgba(4, 1, 1, 0.95);
+  border: 1px solid var(--red-mid);
+  box-shadow: 0 0 30px var(--red-dim);
+  display: flex;
+  flex-direction: column;
+}
+.report-window .window-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.report-window .window-body {
+  overflow-y: auto;
+}
+.report-close {
+  background: transparent;
+  border: none;
+  color: var(--red);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.report-close:hover { color: var(--text); }
+.report-risk {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+.risk-value.alert { color: #ff8a8a; text-shadow: 0 0 8px var(--red-glow); }
+.risk-value.accent { color: var(--red); }
+.report-section-header {
+  margin-top: 20px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--red-dim);
+  padding-bottom: 6px;
+  text-transform: uppercase;
+}
+.report-finding {
+  font-size: 13px;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.report-finding.alert { color: #ff8a8a; }
+.report-finding.accent { color: var(--red); }
+.finding-cat { font-weight: bold; }
+.remediation-list {
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.remediation-list li::before {
+  content: '▹ ';
+  color: var(--red);
 }
 
 /* ── Locked Data Nexus gate (intro) ───────────────────── */
@@ -662,10 +749,125 @@ body.intro-locked {
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
-.nexus-wrapper {
+/* Perspective stage for threshold zoom-through */
+#perspective-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  perspective: 900px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+#perspective-wrap .intro-core,
+#perspective-wrap .intro-proceed {
+  pointer-events: auto;
+}
+#intro-scene {
   position: relative;
-  width: min(72vw, 280px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  transform-style: preserve-3d;
+  /* Default; JS retargets this to the door center before zooming */
+  transform-origin: 50% 30%;
+  transition: transform 2.2s cubic-bezier(0.75, 0, 0.9, 1), filter 2.2s ease-in;
+}
+#intro-scene.zooming {
+  transform: translateZ(2200px) scale(1.15);
+  filter: blur(5px) brightness(1.2);
+}
+
+/* Gothic doorway around the nexus figure */
+#door-wrap {
+  position: relative;
+  width: min(78vw, 320px);
+  height: min(68vh, 440px);
   margin: 0 auto 18px;
+  z-index: 2;
+}
+#door-frame {
+  position: absolute;
+  inset: -8px;
+  border: 3px solid rgba(208, 18, 18, 0.85);
+  box-shadow:
+    0 0 50px rgba(208, 18, 18, 0.45),
+    0 0 90px rgba(208, 18, 18, 0.2),
+    inset 0 0 60px rgba(208, 18, 18, 0.18);
+  clip-path: polygon(50% 0%, 100% 10%, 100% 100%, 0% 100%, 0% 10%);
+  pointer-events: none;
+}
+#door-light {
+  position: absolute;
+  inset: 4px;
+  background: radial-gradient(ellipse at 50% 30%, rgba(208, 18, 18, 0.55), rgba(208, 18, 18, 0.12) 60%, transparent 85%);
+  opacity: 0.75;
+  animation: door-breathe 5s ease-in-out infinite;
+  z-index: 1;
+  clip-path: polygon(50% 0%, 100% 10%, 100% 100%, 0% 100%, 0% 10%);
+  pointer-events: none;
+}
+@keyframes door-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.9; }
+}
+.door-panel {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 50%;
+  background: linear-gradient(180deg, #1c1414, #120c0c 60%, #0a0606);
+  z-index: 3;
+  transition: transform 1.4s cubic-bezier(0.6, 0, 0.3, 1), opacity 1.4s ease;
+  pointer-events: none;
+}
+.door-panel.left {
+  left: 4px;
+  clip-path: polygon(100% 0%, 100% 100%, 0% 100%, 0% 12%);
+  border-right: 1px solid rgba(208, 18, 18, 0.7);
+}
+.door-panel.right {
+  right: 4px;
+  clip-path: polygon(100% 12%, 100% 100%, 0% 100%, 0% 0%);
+  border-left: 1px solid rgba(208, 18, 18, 0.7);
+}
+.door-panel::before {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(208, 18, 18, 0.28) 0px,
+    rgba(208, 18, 18, 0.28) 1px,
+    transparent 1px,
+    transparent 26px
+  );
+  opacity: 0.9;
+}
+#door-wrap.open .door-panel.left {
+  transform: translateX(-115%);
+  opacity: 0;
+}
+#door-wrap.open .door-panel.right {
+  transform: translateX(115%);
+  opacity: 0;
+}
+
+.nexus-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 78%;
+  z-index: 10;
+  transition: opacity 1.3s ease, transform 1.3s ease, filter 1.3s ease;
+}
+.nexus-wrapper.fading {
+  opacity: 0;
+  transform: translate(-50%, -70%) scale(1.06);
+  filter: blur(6px);
 }
 .nexus-figure {
   position: relative;
@@ -748,6 +950,12 @@ body.intro-locked {
   padding: 22px 24px 24px;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
   text-align: left;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.terminal-prompt-box.threshold-hidden {
+  opacity: 0;
+  transform: translateY(18px);
+  pointer-events: none;
 }
 .terminal-prompt-box .terminal-header {
   border: none;
@@ -828,11 +1036,6 @@ body.intro-locked {
   color: #fff;
 }
 
-.intro-gate.gate-dismissed .intro-core {
-  opacity: 0;
-  transform: scale(0.9) translateY(-20px);
-  pointer-events: none;
-}
 .intro-gate.gate-dismissed .panel-left { transform: translateX(-100%); }
 .intro-gate.gate-dismissed .panel-right { transform: translateX(100%); }
 .intro-gate.gate-dismissed .hud-top-bar,
@@ -845,13 +1048,39 @@ body.intro-locked {
   transition: opacity 0.45s ease;
 }
 
+/* Pass-through: keep only the flash while the app shows underneath */
+.intro-gate.threshold-pass {
+  background: transparent;
+}
+.intro-gate.threshold-pass > *:not(#intro-flash) {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Black threshold pass-through (no crimson flash) */
+#intro-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.85s ease;
+}
+#intro-flash.on {
+  opacity: 1;
+}
+
 @media (max-width: 640px) {
   .hud-top-bar {
     left: 40px;
     right: 40px;
     flex-wrap: wrap;
   }
-  .nexus-wrapper { width: min(70vw, 220px); }
+  #door-wrap {
+    width: min(82vw, 260px);
+    height: min(58vh, 360px);
+  }
   .cli-text { font-size: 0.78rem; }
 }
 
@@ -884,9 +1113,6 @@ body.intro-locked {
 
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 1100px) {
-  .tool-gallery {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   #console-view {
     grid-template-rows: 96px minmax(420px, 52vh) minmax(160px, 1fr) 210px;
   }
@@ -904,17 +1130,10 @@ body.intro-locked {
       'console';
     overflow-y: auto;
   }
-  .tool-gallery {
-    grid-template-columns: 1fr 1fr;
-    min-height: 0;
-  }
-  .tool-card {
-    min-height: 320px;
-  }
-}
-@media (max-width: 768px) {
-  .node.hide-mobile { display: none !important; }
-  .tool-gallery {
+  .arsenal-split {
     grid-template-columns: 1fr;
+  }
+  .tool-gallery {
+    flex-direction: row;
   }
 }

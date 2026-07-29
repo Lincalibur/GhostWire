@@ -26,13 +26,13 @@ The front-end design of GhostWire rejects clean, sterile modern UI trends in fav
 ### 1b. The Boot Intro — Locked Data Nexus Gate
 On every page load a full-screen **gate** blocks the app until the operator clicks **Accept & Proceed** (`frontend/js/ui/intro.js`). There is no skip shortcut and no auto-dismiss.
 
-*   **Central figure:** `frontend/assets/divine-apparition.png` (from `Example/Divine_Apparition-removebg-preview.png`) with a breathing glow and target reticle behind it.
+*   **Central figure:** `frontend/assets/divine-apparition.png` (from `Example/Divine_Apparition-removebg-preview.png`) inside a gothic doorway with breathing glow and target reticle.
 *   **Full-viewport ASCII stream:** Characters spawn off all four edges and converge on the figure (theme polish from `Example/themeUpdate.md`).
 *   **HUD framing:** Corner brackets (`┌ ┐ └ ┘`), top status bar (`GHOSTWIRE // SYS_NODE | STATUS: PENDING | AUTH: REQUIRED`), faint scrolling hex matrix, scanlines + grid.
 *   **Humanized typewriter:** Warning copy types with punctuation pauses and hesitations; the Continue button only appears when typing finishes.
-*   **Tear-away exit:** Split panels slide outward and the core fades, then auth / portal / console may proceed.
+*   **Threshold exit:** On Accept — figure fades, doors open, perspective zooms through the doorway, crimson flash, then the app is revealed (`Example/threshold_sequence.html`).
 
-Layout inspiration: `Example/ghostwire_intro.html`.
+Layout inspiration: `Example/ghostwire_intro.html` + `Example/threshold_sequence.html`.
 
 ### 2. The Hero Component: The Surveillance Mesh
 The landing page displays a live, interactive vector/ASCII canvas representing a living network:
@@ -87,10 +87,19 @@ ENTER OPERATOR ID : _
 
 Once decrypted, the interface drops the user into an integrated suite of command-line and graphical recon modules:
 
-*   **`µspect` (Target Footprinting):** Resolves structured queries on domain assets, hosting histories, and active network topologies.
+*   **`µspect` (Target Footprinting):** Resolves structured queries on domain assets, hosting histories, and active network topologies. Also cross-references Certificate Transparency logs (crt.sh) to surface historical subdomains.
 *   **`WireTap` (Signal Leakage Sniffer):** Discovers leaky metadata, exposed configuration fragments, and exposed cloud storage buckets.
 *   **`Grimnir` (Alias Tracker):** Traverses structured social handles, developer directories, and public code repositories to map digital identities.
 *   **`v0id` (Breach Archive Indexer):** Safely cross-references known breach databases to highlight weak security postures and exposed account credentials.
+*   **`Wraith` (Metadata Extractor):** Client-side only — extracts EXIF (camera model, capture date, GPS coordinates) from an uploaded photo and lets the operator download a metadata-stripped copy. The original file is never uploaded to the server; parsing and sanitization both happen in-browser via a vendored EXIF reader (`frontend/js/vendor/miniExif.js`) and an HTML5 canvas re-encode.
+
+### Step-by-step audit workflow
+
+The console now tracks findings across every module you run in a single session (in-memory + `sessionStorage`, never sent to the backend):
+
+1. Run any combination of `µspect`, `v0id`, `Grimnir`, `WireTap`, and `Wraith` against your own identifiers.
+2. Each completed scan folds its findings into a running **audit profile** (`frontend/js/state/auditProfile.js`).
+3. Click **`GENERATE AUDIT REPORT`** (operator meta panel) for a categorized summary: an overall **risk score** (0–100), findings grouped by category (credential exposure, cloud leakage, associated accounts, infrastructure exposure, metadata leakage), and an actionable remediation checklist with links.
 
 ---
 
@@ -133,7 +142,9 @@ GhostWire/
     └── js/
         ├── main.js         # entrypoint
         ├── api.js          # typed fetch client
-        ├── ui/             # portal (login/OTP), console, feed
+        ├── ui/             # portal (login/OTP), console, feed, report, metadataTool
+        ├── state/          # auditProfile.js — cross-module findings aggregation + risk scoring
+        ├── vendor/         # miniExif.js — dependency-free EXIF/GPS reader
         └── visuals/        # asciiEye, skullArt, circuitField, audio, mesh (+ intro in ui/)
 ```
 
@@ -248,7 +259,7 @@ Dev conveniences are **hard-disabled** whenever `NODE_ENV=production`, regardles
 ### Recon connectors
 | Module     | Purpose                    | Upstream (all passive/safe)                     |
 | ---------- | -------------------------- | ----------------------------------------------- |
-| `µspect`   | Domain footprinting        | Cloudflare DNS-over-HTTPS                        |
+| `µspect`   | Domain footprinting        | Cloudflare DNS-over-HTTPS + crt.sh (Cert. Transparency) |
 | `WireTap`  | Cloud bucket exposure      | Passive S3 endpoint probing (GrayhatWarfare opt) |
 | `Grimnir`  | Username / alias discovery | HTTP status probing of public profiles          |
 | `v0id`     | Breach / credential check  | HaveIBeenPwned range API (k-anonymity)          |
