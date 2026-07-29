@@ -6,6 +6,27 @@ import { logger } from '../utils/logger.js';
 const MAX_QUERY_LENGTH = 255;
 
 /**
+ * v0id's query payload may carry a raw password (JSON `{ email, password }`).
+ * Never persist that plaintext to the audit log — redact it before storage.
+ * @param {string} module
+ * @param {string} query
+ * @returns {string}
+ */
+function redactForLog(module, query) {
+  if (module !== 'v0id') return query;
+  try {
+    const parsed = JSON.parse(query);
+    if (typeof parsed.password === 'string' && parsed.password) {
+      parsed.password = '[REDACTED]';
+      return JSON.stringify(parsed);
+    }
+    return query;
+  } catch {
+    return query;
+  }
+}
+
+/**
  * Execute a recon query against the requested connector, persisting an audit
  * log entry for the operator.
  *
@@ -33,7 +54,7 @@ export async function executeQuery({ operatorId, module, query }) {
   queryLogRepository.create({
     operatorId,
     toolUsed: module,
-    searchQuery: trimmed,
+    searchQuery: redactForLog(module, trimmed),
     resultsCached: data,
   });
 

@@ -1,31 +1,40 @@
 import { api } from './api.js';
 import { AmbientHum } from './visuals/audio.js';
-import { initPortal } from './ui/portal.js';
-import { initConsole } from './ui/console.js';
+import { initOutputView, initInputView, loadModuleMetadata } from './ui/console.js';
 import { playIntro } from './ui/intro.js';
 import { initMetadataTool } from './ui/metadataTool.js';
 import { initReportPanel } from './ui/report.js';
+import { clearFeed } from './ui/feed.js';
+import { resetProfile } from './state/auditProfile.js';
 
-/** Swap from the login portal to the authenticated console view. */
-function enterConsole(handle) {
-  document.getElementById('login-view').classList.add('hidden');
-  const consoleView = document.getElementById('console-view');
-  consoleView.classList.remove('hidden');
-  consoleView.style.display = 'grid';
-  initConsole(handle, exitConsole);
+const INTAKE_FIELD_IDS = ['intake-email', 'intake-password', 'intake-username', 'intake-domain', 'intake-org'];
+
+/** Swap from the input page to the scan-output page. */
+function showOutputView() {
+  document.getElementById('input-view').classList.add('hidden');
+  const outputView = document.getElementById('output-view');
+  outputView.classList.remove('hidden');
+  outputView.style.display = 'grid';
 }
 
-/** Return to the login portal after logout/session loss. */
-function exitConsole() {
-  const consoleView = document.getElementById('console-view');
-  consoleView.classList.add('hidden');
-  consoleView.style.display = 'none';
-  document.getElementById('login-view').classList.remove('hidden');
-  document.getElementById('login-form-step').classList.remove('hidden');
-  document.getElementById('otp-form-step').classList.add('hidden');
-  document.getElementById('operator-id').value = '';
-  document.getElementById('operator-pass').value = '';
-  document.getElementById('otp-token').value = '';
+/** Return to the input page (fresh state) — used by "Terminate Session". */
+async function showInputView() {
+  try {
+    await api.auth.logout();
+  } catch {
+    /* no active session to terminate — fine */
+  }
+  clearFeed();
+  resetProfile();
+  INTAKE_FIELD_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  const outputView = document.getElementById('output-view');
+  outputView.classList.add('hidden');
+  outputView.style.display = 'none';
+  document.getElementById('input-view').classList.remove('hidden');
 }
 
 /** Wire the ambient audio toggle button. */
@@ -39,51 +48,21 @@ function initAudioToggle() {
   });
 }
 
-/**
- * Enable dev-mode affordances: a corner badge, prefilled credentials, and a
- * one-click "DEV LOGIN" button that bypasses the OTP.
- * @param {{ devOperator?: string, devPassword?: string }} health
- */
-function enableDevAffordances(health) {
-  document.body.classList.add('dev-mode');
-
+/** Show a small corner badge indicating dev/static-demo mode. */
+function showDevBadge(health) {
   const badge = document.createElement('div');
   badge.id = 'dev-badge';
   badge.textContent = health.staticDemo ? 'STATIC DEMO' : 'DEV MODE';
   document.body.appendChild(badge);
-
-  const idInput = document.getElementById('operator-id');
-  const passInput = document.getElementById('operator-pass');
-  if (idInput && health.devOperator) idInput.value = health.devOperator;
-  if (passInput && health.devPassword) passInput.value = health.devPassword;
-
-  const loginStep = document.getElementById('login-form-step');
-  if (loginStep && !document.getElementById('btn-dev-login')) {
-    const btn = document.createElement('button');
-    btn.id = 'btn-dev-login';
-    btn.type = 'button';
-    btn.className = 'terminal-btn dev';
-    btn.textContent = 'DEV LOGIN (skip OTP)';
-    btn.addEventListener('click', async () => {
-      btn.disabled = true;
-      try {
-        const res = await api.auth.devLogin();
-        enterConsole(res.operator.handle);
-      } catch {
-        btn.disabled = false;
-      }
-    });
-    loginStep.appendChild(btn);
-  }
 }
 
 /** Application entrypoint. */
 async function main() {
-  // Portal boots behind the gate; auth waits until Continue.
   initAudioToggle();
-  initPortal(enterConsole);
   initMetadataTool();
   initReportPanel();
+  initOutputView(showInputView);
+  initInputView(showOutputView);
 
   await playIntro();
 
@@ -91,31 +70,34 @@ async function main() {
   try {
     const health = await api.health();
     devMode = Boolean(health.devMode);
-    if (devMode) enableDevAffordances(health);
+    if (devMode) showDevBadge(health);
   } catch {
     /* health unavailable — continue as prod-like */
   }
 
-  // Resume an existing session if the cookie is still valid.
+  // Best-effort, silent session bootstrap: resume an existing session, or
+  // (dev mode only) auto-login, so recon calls are authorized once the
+  // operator starts a scan. No UI is gated on this succeeding.
+  let handle = null;
   try {
     const res = await api.auth.session();
-    if (res?.operator?.handle) {
-      enterConsole(res.operator.handle);
-      return;
-    }
+    handle = res?.operator?.handle || null;
   } catch {
-    /* no active session */
+    if (devMode) {
+      try {
+        const res = await api.auth.devLogin();
+        handle = res?.operator?.handle || null;
+      } catch {
+        /* stays unauthenticated — recon calls will surface as errors per job */
+      }
+    }
+  }
+  if (handle) {
+    const handleEl = document.getElementById('active-op-handle');
+    if (handleEl) handleEl.textContent = handle.toUpperCase();
   }
 
-  // Dev mode: drop straight into the console for fast feature testing.
-  if (devMode) {
-    try {
-      const res = await api.auth.devLogin();
-      enterConsole(res.operator.handle);
-    } catch {
-      /* fall back to the (prefilled) portal */
-    }
-  }
+  await loadModuleMetadata();
 }
 
 document.addEventListener('DOMContentLoaded', main);

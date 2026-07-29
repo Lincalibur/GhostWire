@@ -15,8 +15,8 @@ const MODULES = [
     id: 'v0id',
     label: 'v0id',
     title: 'v0id // BREACH ARCHIVE INDEXER',
-    inputLabel: 'CREDENTIAL OR PASSPHRASE TO ASSESS',
-    placeholder: 'e.g., password123',
+    inputLabel: 'EMAIL AND/OR PASSWORD TO ASSESS',
+    placeholder: 'e.g., name@example.com',
   },
   {
     id: 'grimnir',
@@ -31,6 +31,13 @@ const MODULES = [
     title: 'WireTap // SIGNAL LEAKAGE SNIFFER',
     inputLabel: 'ORG / KEYWORD',
     placeholder: 'e.g., acme',
+  },
+  {
+    id: 'shodan',
+    label: 'Shodan',
+    title: 'Shodan // INFRASTRUCTURE EXPOSURE',
+    inputLabel: 'TARGET IP OR DOMAIN',
+    placeholder: 'e.g., 1.1.1.1 or example.com',
   },
 ];
 
@@ -67,17 +74,43 @@ function sampleResult(module, query) {
         },
       };
     }
-    case 'v0id':
-      return {
-        lines: [
-          '  -> Computing SHA-1 digest (k-anonymity range query)...',
-          '  -> MATCH: exposure confirmed in known breach corpora.',
-          '  -> Seen 12,481 time(s) across indexed dumps.',
-          '  -> STATUS: CRITICAL — credential compromised. Rotate immediately.',
-          '  -> [ STATIC DEMO ] HIBP upstream disabled on GitHub Pages.',
-        ],
-        data: { prefix: 'ABCDE', exposed: true, count: 12481 },
-      };
+    case 'v0id': {
+      let email = '';
+      let password = '';
+      try {
+        const parsed = JSON.parse(q);
+        email = typeof parsed.email === 'string' ? parsed.email.trim() : '';
+        password = typeof parsed.password === 'string' ? parsed.password.trim() : '';
+      } catch {
+        password = q;
+      }
+
+      const lines = [];
+      let emailData = null;
+      let passwordData = null;
+
+      if (email) {
+        lines.push(
+          `  [EMAIL] Querying breach index for ${email}...`,
+          '  [EMAIL] MATCH: found in 2 breach(es).',
+          '  [EMAIL] Collection #1, ExampleCorp 2024 Leak',
+          '  [EMAIL] STATUS: CRITICAL — associated accounts may be compromised.',
+        );
+        emailData = { checked: true, exposed: true, breaches: ['Collection #1', 'ExampleCorp 2024 Leak'] };
+      }
+      if (password) {
+        lines.push(
+          '  [PASSWORD] Computing SHA-1 digest (k-anonymity range query)...',
+          '  [PASSWORD] MATCH: exposure confirmed in known breach corpora.',
+          '  [PASSWORD] Seen 12,481 time(s) across indexed dumps.',
+          '  [PASSWORD] STATUS: CRITICAL — credential compromised. Rotate immediately.',
+        );
+        passwordData = { checked: true, prefix: 'ABCDE', exposed: true, count: 12481 };
+      }
+      lines.push('  -> [ STATIC DEMO ] HIBP / XposedOrNot upstreams disabled on GitHub Pages.');
+
+      return { lines, data: { email: emailData, password: passwordData } };
+    }
     case 'grimnir': {
       const results = [
         { platform: 'GitHub', found: true, status: 200 },
@@ -87,12 +120,10 @@ function sampleResult(module, query) {
       ];
       return {
         lines: [
-          `  -> Traversing public directories for [${q}]...`,
+          `  -> Traversing 643 public directories for [${q}]...`,
           '  -> [FOUND]  GitHub',
-          '  -> [clear]  Reddit (404)',
           '  -> [FOUND]  GitLab',
-          '  -> [clear]  Keybase (404)',
-          '  -> Trace complete. 2/4 surface(s) matched.',
+          '  -> Trace complete. 2/643 surface(s) matched.',
           '  -> [ STATIC DEMO ] Live probes disabled on GitHub Pages.',
         ],
         data: { handle: q, results },
@@ -112,6 +143,20 @@ function sampleResult(module, query) {
           '  -> [ STATIC DEMO ] Live S3 probes disabled on GitHub Pages.',
         ],
         data: { keyword: q, results },
+      };
+    }
+    case 'shodan': {
+      const ports = [22, 80, 443];
+      const vulns = ['CVE-2023-12345'];
+      return {
+        lines: [
+          `  -> Querying Shodan InternetDB for [${q}]...`,
+          `  -> OPEN PORTS: ${ports.join(', ')}`,
+          `  -> [!] 1 known vulnerability(ies): ${vulns[0]}`,
+          '  -> STATUS: CRITICAL — unpatched exposure indexed.',
+          '  -> [ STATIC DEMO ] Live InternetDB lookups disabled on GitHub Pages.',
+        ],
+        data: { ip: '203.0.113.42', indexed: true, ports, vulns, hostnames: [q], cpes: [], tags: [] },
       };
     }
     default:
