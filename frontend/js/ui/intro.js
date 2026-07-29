@@ -1,0 +1,290 @@
+/**
+ * GhostWire intro gate — locked Data Nexus screen.
+ *
+ * Based on Example/ghostwire_intro.html + Example/threshold_sequence.html,
+ * polished per Example/themeUpdate.md:
+ * HUD brackets + top bar, full-viewport ASCII streams into the center figure,
+ * gothic doorway, humanized typewriter, and a Continue button that is the
+ * *only* way past the gate. Accept triggers the threshold exit: figure fade →
+ * doors open → perspective zoom → crimson flash → reveal app.
+ */
+
+const ASCII_CHARS = '0123456789ABCDEF<>[]//::--++==$$';
+const TYPE_TEXT =
+  'WARNING: IGNORANCE IS A SHIELD. KNOWLEDGE IS A BURDEN.\n\nDO YOU STILL WISH TO PROCEED?';
+
+/**
+ * Full-viewport ASCII particles that spawn off-screen and stream toward the
+ * central figure. Replaces the localized CSS-dot streams from the prototype.
+ */
+class AsciiStreamField {
+  /** @param {HTMLCanvasElement} canvas */
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.particles = [];
+    this._running = true;
+    this._onResize = () => this._resize();
+    window.addEventListener('resize', this._onResize);
+    this._resize();
+    const count = Math.min(90, Math.max(48, Math.floor((this.w * this.h) / 18000)));
+    for (let i = 0; i < count; i++) {
+      this.particles.push(this._spawn());
+    }
+    this._raf = requestAnimationFrame(() => this._loop());
+  }
+
+  _resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    this.w = window.innerWidth;
+    this.h = window.innerHeight;
+    this.canvas.width = Math.round(this.w * dpr);
+    this.canvas.height = Math.round(this.h * dpr);
+    this.canvas.style.width = `${this.w}px`;
+    this.canvas.style.height = `${this.h}px`;
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.tx = this.w / 2;
+    this.ty = this.h * 0.38;
+  }
+
+  _spawn() {
+    const edge = (Math.random() * 4) | 0;
+    let x;
+    let y;
+    if (edge === 0) {
+      x = Math.random() * this.w;
+      y = -24;
+    } else if (edge === 1) {
+      x = this.w + 24;
+      y = Math.random() * this.h;
+    } else if (edge === 2) {
+      x = Math.random() * this.w;
+      y = this.h + 24;
+    } else {
+      x = -24;
+      y = Math.random() * this.h;
+    }
+    return {
+      x,
+      y,
+      speed: 1.4 + Math.random() * 2.6,
+      char: ASCII_CHARS[(Math.random() * ASCII_CHARS.length) | 0],
+      opacity: 0.22 + Math.random() * 0.7,
+      size: 10 + ((Math.random() * 7) | 0),
+    };
+  }
+
+  _loop() {
+    if (!this._running) return;
+    this._raf = requestAnimationFrame(() => this._loop());
+    const ctx = this.ctx;
+    ctx.fillStyle = 'rgba(10, 10, 10, 0.28)';
+    ctx.fillRect(0, 0, this.w, this.h);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (const p of this.particles) {
+      const dx = this.tx - p.x;
+      const dy = this.ty - p.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      if (dist < 22) {
+        Object.assign(p, this._spawn());
+        continue;
+      }
+      p.x += (dx / dist) * p.speed;
+      p.y += (dy / dist) * p.speed;
+      if (Math.random() < 0.05) {
+        p.char = ASCII_CHARS[(Math.random() * ASCII_CHARS.length) | 0];
+      }
+      ctx.globalAlpha = p.opacity;
+      ctx.fillStyle = '#d01212';
+      ctx.font = `bold ${p.size}px "JetBrains Mono", monospace`;
+      ctx.fillText(p.char, p.x, p.y);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  stop() {
+    this._running = false;
+    cancelAnimationFrame(this._raf);
+    window.removeEventListener('resize', this._onResize);
+  }
+}
+
+/**
+ * Humanized typewriter — variable delays, punctuation pauses, occasional hesitations.
+ * @param {HTMLElement} el
+ * @param {string} text
+ * @param {boolean} reduced
+ * @returns {Promise<void>}
+ */
+function typeWithHumanRhythm(el, text, reduced) {
+  return new Promise((resolve) => {
+    if (reduced) {
+      el.textContent = text;
+      resolve();
+      return;
+    }
+    let index = 0;
+    const step = () => {
+      if (index >= text.length) {
+        resolve();
+        return;
+      }
+      const ch = text[index++];
+      el.textContent += ch;
+      let delay = 35 + ((Math.random() * 50) | 0);
+      if (['.', ':', '?', '!'].includes(ch)) delay += 250 + ((Math.random() * 300) | 0);
+      else if (ch === ' ' || ch === '\n') delay += 20 + ((Math.random() * 60) | 0);
+      else if (Math.random() < 0.08) delay += 150 + ((Math.random() * 200) | 0);
+      setTimeout(step, delay);
+    };
+    step();
+  });
+}
+
+/**
+ * Build faint scrolling hex/binary columns for ambient background texture.
+ * @param {HTMLElement} host
+ */
+function buildHexMatrix(host) {
+  const cols = Math.max(12, Math.floor(window.innerWidth / 72));
+  const glyphs = '0123456789ABCDEF';
+  host.innerHTML = '';
+  for (let c = 0; c < cols; c++) {
+    const col = document.createElement('div');
+    col.className = 'hex-col';
+    col.style.animationDuration = `${18 + (c % 7) * 3}s`;
+    col.style.animationDelay = `${-((c * 1.7) % 12)}s`;
+    let s = '';
+    for (let i = 0; i < 48; i++) {
+      s += glyphs[(Math.random() * glyphs.length) | 0];
+      if (i % 2 === 1) s += Math.random() < 0.35 ? ' ' : '\n';
+      else s += Math.random() < 0.5 ? '0' : '1';
+      s += '\n';
+    }
+    col.textContent = s;
+    host.appendChild(col);
+  }
+}
+
+/**
+ * Play the locked intro gate. Resolves only after the operator clicks Continue.
+ * @param {() => void} [onComplete]
+ * @returns {Promise<void>}
+ */
+export function playIntro(onComplete) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('intro-overlay');
+    const canvas = document.getElementById('ascii-stream-canvas');
+    const output = document.getElementById('cli-type-output');
+    const proceedBtn = document.getElementById('proceedBtn');
+    const hexHost = document.getElementById('hex-matrix');
+
+    if (!overlay || !canvas || !output || !proceedBtn) {
+      onComplete?.();
+      resolve();
+      return;
+    }
+
+    const reduced =
+      window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    document.body.classList.add('intro-locked');
+    overlay.classList.remove('gate-dismissed', 'gate-removed', 'hidden');
+    proceedBtn.classList.remove('visible');
+    proceedBtn.disabled = true;
+    output.textContent = '';
+
+    if (hexHost) buildHexMatrix(hexHost);
+
+    const stream = reduced ? null : new AsciiStreamField(canvas);
+    if (reduced) {
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    let done = false;
+    const statusEl = document.getElementById('intro-status');
+    const doorWrap = document.getElementById('door-wrap');
+    const nexusWrap = document.getElementById('nexus-wrap');
+    const uiPanel = document.getElementById('intro-ui-panel');
+    const scene = document.getElementById('intro-scene');
+    const flash = document.getElementById('intro-flash');
+
+    /**
+     * Aim the perspective zoom at the geometric center of the doorway
+     * (not the bottom / terminal area of the scene).
+     */
+    const aimZoomAtDoor = () => {
+      if (!scene || !doorWrap) return;
+      const s = scene.getBoundingClientRect();
+      const d = doorWrap.getBoundingClientRect();
+      if (!s.width || !s.height) return;
+      const ox = (((d.left + d.width / 2) - s.left) / s.width) * 100;
+      const oy = (((d.top + d.height / 2) - s.top) / s.height) * 100;
+      scene.style.transformOrigin = `${ox.toFixed(2)}% ${oy.toFixed(2)}%`;
+    };
+
+    const finish = () => {
+      if (done) return;
+      done = true;
+      proceedBtn.disabled = true;
+      proceedBtn.style.pointerEvents = 'none';
+      const label = proceedBtn.querySelector('.btn-glitch-text');
+      if (label) label.textContent = '[ ACCESS GRANTED ]';
+      proceedBtn.classList.add('granted');
+      if (statusEl) statusEl.textContent = 'AUTHORIZED';
+
+      const tearDown = () => {
+        stream?.stop();
+        overlay.classList.add('gate-removed');
+        overlay.remove();
+        document.body.classList.remove('intro-locked');
+        onComplete?.();
+        resolve();
+      };
+
+      // Reduced motion: quick fade, no door/zoom theatrics.
+      if (reduced) {
+        overlay.classList.add('gate-dismissed');
+        setTimeout(tearDown, 450);
+        return;
+      }
+
+      // Threshold sequence:
+      // 1) fade UI + figure  2) open door  3) zoom into door center  4) black fade  5) reveal app
+      uiPanel?.classList.add('threshold-hidden');
+      nexusWrap?.classList.add('fading');
+      canvas.style.transition = 'opacity 0.8s ease';
+      canvas.style.opacity = '0';
+
+      setTimeout(() => doorWrap?.classList.add('open'), 900);
+      setTimeout(() => {
+        aimZoomAtDoor();
+        // Force reflow so the new transform-origin is applied before zooming.
+        void scene?.offsetWidth;
+        scene?.classList.add('zooming');
+      }, 1500);
+      setTimeout(() => overlay.classList.add('gate-dismissed'), 2200);
+      setTimeout(() => flash?.classList.add('on'), 3000);
+      setTimeout(() => {
+        overlay.classList.add('threshold-pass');
+        document.body.classList.remove('intro-locked');
+      }, 3400);
+      setTimeout(() => flash?.classList.remove('on'), 3900);
+      setTimeout(tearDown, 4500);
+    };
+
+    typeWithHumanRhythm(output, TYPE_TEXT, reduced).then(() => {
+      proceedBtn.classList.add('visible');
+      proceedBtn.disabled = false;
+      proceedBtn.focus({ preventScroll: true });
+    });
+
+    proceedBtn.addEventListener('click', finish, { once: true });
+  });
+}

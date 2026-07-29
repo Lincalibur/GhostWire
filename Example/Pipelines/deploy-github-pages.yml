@@ -1,0 +1,96 @@
+name: Deploy GitHub Pages
+
+# Builds the GhostWire static frontend from main and deploys via GitHub Actions Pages.
+# Feature / development branches do not publish — merge or push to main to update the site.
+#
+# This file is the Example reference copy. The live workflow GitHub runs lives at:
+#   .github/workflows/deploy-github-pages.yml
+#
+# One-time setup: Settings → Pages → Source = GitHub Actions
+# (Do not use "Deploy from a branch" — that triggers the flaky pages-build-deployment CDN purge.)
+#
+# Note: GitHub Pages is static-only. The live Express/SQLite backend is not hosted here;
+# the Pages build injects STATIC_DEMO so the UI runs with an in-browser mock API.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'scripts/prepare-pages.mjs'
+      - '.github/workflows/deploy-github-pages.yml'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build static site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare Pages bundle
+        env:
+          # Project site URL: https://<owner>.github.io/<repo>/
+          BASE_PATH: /${{ github.event.repository.name }}/
+          STATIC_DEMO: 'true'
+        run: npm run pages:build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
+    steps:
+      # Transient GitHub CDN hangs (purging_cdn) are a known platform flake.
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 600000
+        continue-on-error: true
+
+      - name: Deploy retry (CDN purge flakiness)
+        id: deployment_retry
+        if: steps.deployment.outcome != 'success'
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 600000
+        continue-on-error: true
+
+      - name: Fail if both deploy attempts failed
+        if: steps.deployment.outcome != 'success' && steps.deployment_retry.outcome != 'success'
+        run: |
+          echo "GitHub Pages deploy failed twice (often a transient CDN purge outage)."
+          echo "Re-run this workflow later, or check https://www.githubstatus.com/"
+          exit 1

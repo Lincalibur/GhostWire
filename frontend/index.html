@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GHOSTWIRE // OPERATOR PORTAL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=UnifrakturMaguntia&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- Locked Data Nexus gate — Continue is the only exit -->
+  <div id="intro-overlay" class="intro-gate" role="dialog" aria-modal="true" aria-label="GhostWire gatekeeper">
+    <canvas id="ascii-stream-canvas" aria-hidden="true"></canvas>
+    <div id="hex-matrix" class="hex-matrix" aria-hidden="true"></div>
+    <div class="scanline-overlay" aria-hidden="true"></div>
+    <div class="grid-background" aria-hidden="true"></div>
+
+    <div class="hud-top-bar">
+      <div class="hud-block">GHOSTWIRE // SYS_NODE</div>
+      <div class="hud-block">STATUS: <span class="hud-warn" id="intro-status">PENDING</span></div>
+      <div class="hud-block red-text">AUTH: REQUIRED</div>
+    </div>
+
+    <div class="corner-bracket top-left" aria-hidden="true">┌</div>
+    <div class="corner-bracket top-right" aria-hidden="true">┐</div>
+    <div class="corner-bracket bottom-left" aria-hidden="true">└</div>
+    <div class="corner-bracket bottom-right" aria-hidden="true">┘</div>
+
+    <div class="gate-panel panel-left" aria-hidden="true"></div>
+    <div class="gate-panel panel-right" aria-hidden="true"></div>
+
+    <div id="perspective-wrap" aria-hidden="true">
+      <div id="intro-scene">
+        <div class="intro-core">
+          <div id="door-wrap">
+            <div id="door-frame" aria-hidden="true"></div>
+            <div id="door-light" aria-hidden="true"></div>
+            <div class="door-panel left" aria-hidden="true"></div>
+            <div class="door-panel right" aria-hidden="true"></div>
+
+            <div class="nexus-wrapper" id="nexus-wrap">
+              <div class="crosshair" aria-hidden="true">
+                <span class="ch-h"></span>
+                <span class="ch-v"></span>
+                <span class="ch-ring"></span>
+                <span class="ch-ring outer"></span>
+              </div>
+              <div class="core-glow" aria-hidden="true"></div>
+              <img
+                id="nexusImg"
+                class="nexus-figure"
+                src="assets/divine-apparition.png"
+                alt="Divine Apparition — GhostWire nexus"
+                draggable="false"
+              />
+            </div>
+          </div>
+
+          <div class="terminal-prompt-box" id="intro-ui-panel">
+            <div class="terminal-header">[ GATEKEEPER_PROTOCOL ]</div>
+            <div class="cli-line">
+              <pre id="cli-type-output" class="cli-text"></pre><span class="cli-cursor" aria-hidden="true">█</span>
+            </div>
+            <button class="terminal-btn intro-proceed" id="proceedBtn" type="button" disabled>
+              <span class="btn-glitch-text" data-text="[ ACCEPT & PROCEED ]">[ ACCEPT &amp; PROCEED ]</span>
+              <span class="btn-subtext">// SINGLE CLICK AUTHORIZATION</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="intro-flash" aria-hidden="true"></div>
+  </div>
+
+  <!-- Ambient audio toggle -->
+  <button id="audio-prompt" type="button">AUDIO: OFF</button>
+
+  <div id="screen">
+    <!-- ── Gatekeeper portal ─────────────────────────────── -->
+    <section class="portal-container" id="login-view">
+      <div class="terminal-window">
+        <div class="terminal-header">[GHOSTWIRE GATEKEEPER v1.0.0]</div>
+
+        <div id="login-form-step">
+          <p class="terminal-note">STATUS: RESTRICTED ACCESS AREA // NODE SECURITY HIGH</p>
+
+          <div class="form-group">
+            <label class="form-label" for="operator-id">OPERATOR IDENTIFIER</label>
+            <div class="terminal-input-wrapper">
+              <span class="terminal-input-prefix">ID:</span>
+              <input type="text" id="operator-id" class="terminal-input" placeholder="_"
+                     autocomplete="off" autofocus />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="operator-pass">ACCESS PASSPHRASE</label>
+            <div class="terminal-input-wrapper">
+              <span class="terminal-input-prefix">PW:</span>
+              <input type="password" id="operator-pass" class="terminal-input" placeholder="_"
+                     autocomplete="off" />
+            </div>
+          </div>
+
+          <button class="terminal-btn" id="btn-submit-operator" type="button">Submit Operator ID</button>
+        </div>
+
+        <div id="otp-form-step" class="hidden">
+          <p class="terminal-note alert" id="otp-channel-note">TOKEN ROUTED VIA OOB CHANNEL</p>
+          <div class="form-group">
+            <label class="form-label" for="otp-token">ENTER DYNAMIC TOKEN</label>
+            <div class="terminal-input-wrapper">
+              <span class="terminal-input-prefix">OTP:</span>
+              <input type="text" id="otp-token" class="terminal-input" placeholder="_"
+                     autocomplete="off" inputmode="numeric" />
+            </div>
+          </div>
+          <button class="terminal-btn" id="btn-submit-otp" type="button">Verify Operator Token</button>
+        </div>
+
+        <p class="portal-error" id="portal-error"></p>
+      </div>
+    </section>
+
+    <!-- ── Operator console (post-auth) ──────────────────── -->
+    <section id="console-view" class="hidden">
+      <div class="panel-window p-sys">
+        <div class="window-header">GHOSTWIRE // SYS_NODE</div>
+        <div class="window-body">
+          <div class="stat-line">STATUS: <span class="ok">ACTIVE</span></div>
+          <div class="stat-line">NODE: GW-991823</div>
+          <div class="stat-line">LATENCY: 12ms</div>
+          <div class="stat-line">BANDWIDTH: 1.2 GB/s</div>
+        </div>
+      </div>
+
+      <div class="panel-window p-feed-status">
+        <div class="window-body center">
+          FEED: <span class="accent glow">SECURE</span>
+        </div>
+      </div>
+
+      <div class="panel-window p-meta">
+        <div class="window-header">OPERATOR_META</div>
+        <div class="window-body">
+          <div class="stat-line">ID: <span id="active-op-handle" class="accent">UNKNOWN</span></div>
+          <div class="stat-line">AUTH: LEVEL_4</div>
+          <button class="terminal-btn small" id="btn-generate-report" type="button">Generate Audit Report</button>
+          <button class="terminal-btn small" id="btn-logout" type="button">Terminate Session</button>
+        </div>
+      </div>
+
+      <div class="panel-window p-engines">
+        <div class="window-header">RECON_ARSENAL // TARGET INTAKE</div>
+        <div class="window-body intake-wrap">
+          <div class="arsenal-split">
+            <div class="tool-gallery" id="tool-gallery-left"></div>
+
+            <div class="intake-grid" id="intake-grid">
+              <div class="form-group intake-field">
+                <label class="form-label" for="intake-email">
+                  EMAIL
+                  <span class="intake-caveat">(checked as a k-anonymity credential lookup, not a breach-by-email search)</span>
+                </label>
+                <div class="terminal-input-wrapper bordered">
+                  <span class="terminal-input-prefix">&gt;</span>
+                  <input type="text" id="intake-email" class="terminal-input" placeholder="e.g., name@example.com" autocomplete="off" />
+                </div>
+                <span class="intake-status" id="intake-status-v0id">IDLE</span>
+              </div>
+
+              <div class="form-group intake-field">
+                <label class="form-label" for="intake-username">USERNAME</label>
+                <div class="terminal-input-wrapper bordered">
+                  <span class="terminal-input-prefix">&gt;</span>
+                  <input type="text" id="intake-username" class="terminal-input" placeholder="e.g., net_phantom" autocomplete="off" />
+                </div>
+                <span class="intake-status" id="intake-status-grimnir">IDLE</span>
+              </div>
+
+              <div class="form-group intake-field">
+                <label class="form-label" for="intake-domain">DOMAIN</label>
+                <div class="terminal-input-wrapper bordered">
+                  <span class="terminal-input-prefix">&gt;</span>
+                  <input type="text" id="intake-domain" class="terminal-input" placeholder="e.g., example.com" autocomplete="off" />
+                </div>
+                <span class="intake-status" id="intake-status-mspect">IDLE</span>
+              </div>
+
+              <div class="form-group intake-field">
+                <label class="form-label" for="intake-org">ORG / KEYWORD</label>
+                <div class="terminal-input-wrapper bordered">
+                  <span class="terminal-input-prefix">&gt;</span>
+                  <input type="text" id="intake-org" class="terminal-input" placeholder="e.g., acme" autocomplete="off" />
+                </div>
+                <span class="intake-status" id="intake-status-wiretap">IDLE</span>
+              </div>
+            </div>
+
+            <div class="tool-gallery" id="tool-gallery-right"></div>
+          </div>
+
+          <button class="terminal-btn" id="btn-run-audit" type="button">Run Full Audit</button>
+          <div class="scan-loader" id="scan-loader"></div>
+          <div class="module-state">SWEEP STATE: <span id="audit-status" class="accent">READY</span></div>
+        </div>
+      </div>
+
+      <div class="panel-window p-module">
+        <div class="window-header">Wraith // METADATA EXTRACTOR</div>
+        <div class="window-body">
+          <div class="form-group">
+            <label class="form-label">IMAGE FILE</label>
+            <div class="dropzone" id="metadata-dropzone">
+              <input type="file" id="metadata-file-input" accept="image/jpeg" hidden />
+              <span class="dropzone-text">[ DROP IMAGE OR CLICK TO SELECT ]</span>
+            </div>
+            <div class="metadata-result hidden" id="metadata-result"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-window p-console">
+        <div class="window-header">CONSOLE OUTPUT LOGS</div>
+        <div class="window-body">
+          <div class="terminal-feed" id="log-feed"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Audit report overlay -->
+  <div id="report-overlay" class="report-overlay hidden">
+    <div class="report-window">
+      <div class="window-header">
+        AUDIT REPORT
+        <button class="report-close" id="btn-close-report" type="button" aria-label="Close report">&times;</button>
+      </div>
+      <div class="window-body" id="report-body"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
