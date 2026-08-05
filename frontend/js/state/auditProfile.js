@@ -8,8 +8,18 @@
 const STORAGE_KEY = 'ghostwire_audit_profile';
 const SENSITIVE_SUBDOMAIN_RE = /^(dev|staging|vpn|admin|internal|test|beta)\./i;
 
+const COMMON_PORTS = new Set([80, 443]);
+
 function emptyProfile() {
-  return { target: '', mspect: null, v0id: null, grimnir: null, wiretap: null, metadata: [] };
+  return {
+    target: '',
+    mspect: null,
+    v0id: null,
+    grimnir: null,
+    wiretap: null,
+    shodan: null,
+    metadata: [],
+  };
 }
 
 function load() {
@@ -79,8 +89,15 @@ export function resetProfile() {
 export function computeRiskScore() {
   let score = 0;
 
-  const breach = profile.v0id?.data;
-  if (breach?.exposed) score += Math.min(40, 20 + Math.log10(Math.max(breach.count, 1)) * 5);
+  const passwordCheck = profile.v0id?.data?.password;
+  if (passwordCheck?.exposed) {
+    score += Math.min(40, 20 + Math.log10(Math.max(passwordCheck.count, 1)) * 5);
+  }
+
+  const emailCheck = profile.v0id?.data?.email;
+  if (emailCheck?.exposed) {
+    score += Math.min(25, 15 + (emailCheck.breaches?.length || 1) * 3);
+  }
 
   const openBuckets = profile.wiretap?.data?.results?.filter((r) => r.state === 'OPEN') || [];
   score += Math.min(25, openBuckets.length * 12);
@@ -94,6 +111,12 @@ export function computeRiskScore() {
 
   const gpsLeaks = profile.metadata.filter((m) => m.gps);
   score += Math.min(10, gpsLeaks.length * 10);
+
+  const shodanVulns = profile.shodan?.data?.vulns || [];
+  score += Math.min(20, shodanVulns.length * 6);
+
+  const unusualPorts = (profile.shodan?.data?.ports || []).filter((p) => !COMMON_PORTS.has(p));
+  score += Math.min(10, unusualPorts.length * 3);
 
   return Math.round(Math.min(100, score));
 }
@@ -117,11 +140,21 @@ export function riskLabel(score) {
 export function buildReport() {
   const findings = [];
 
-  if (profile.v0id?.data?.exposed) {
+  const passwordCheck = profile.v0id?.data?.password;
+  if (passwordCheck?.exposed) {
     findings.push({
       category: 'CREDENTIAL EXPOSURE',
       severity: 'critical',
-      detail: `Credential seen ${profile.v0id.data.count.toLocaleString()} time(s) in indexed breach corpora.`,
+      detail: `Password seen ${passwordCheck.count.toLocaleString()} time(s) in indexed breach corpora.`,
+    });
+  }
+
+  const emailCheck = profile.v0id?.data?.email;
+  if (emailCheck?.exposed) {
+    findings.push({
+      category: 'CREDENTIAL EXPOSURE',
+      severity: 'critical',
+      detail: `Email found in ${emailCheck.breaches.length} breach(es): ${emailCheck.breaches.join(', ')}.`,
     });
   }
 
@@ -160,8 +193,25 @@ export function buildReport() {
     });
   }
 
+  const shodanVulns = profile.shodan?.data?.vulns || [];
+  if (shodanVulns.length) {
+    findings.push({
+      category: 'INFRASTRUCTURE EXPOSURE',
+      severity: 'critical',
+      detail: `${shodanVulns.length} known vulnerability(ies) indexed for the host: ${shodanVulns.slice(0, 5).join(', ')}${shodanVulns.length > 5 ? ', ...' : ''}`,
+    });
+  }
+  const unusualPorts = (profile.shodan?.data?.ports || []).filter((p) => !COMMON_PORTS.has(p));
+  if (unusualPorts.length) {
+    findings.push({
+      category: 'INFRASTRUCTURE EXPOSURE',
+      severity: 'moderate',
+      detail: `Non-standard open port(s) exposed: ${unusualPorts.join(', ')}`,
+    });
+  }
+
   const remediation = [];
-  if (profile.v0id?.data?.exposed) {
+  if (passwordCheck?.exposed || emailCheck?.exposed) {
     remediation.push({
       text: 'Rotate the compromised credential immediately and use a password manager.',
       href: 'https://haveibeenpwned.com/Passwords',
@@ -182,6 +232,12 @@ export function buildReport() {
   if (subdomains.some((s) => SENSITIVE_SUBDOMAIN_RE.test(s))) {
     remediation.push({
       text: 'Restrict internal/staging subdomains from public DNS resolution.',
+      href: null,
+    });
+  }
+  if (shodanVulns.length || unusualPorts.length) {
+    remediation.push({
+      text: 'Patch or close exposed services and review whether non-standard open ports need to be public.',
       href: null,
     });
   }

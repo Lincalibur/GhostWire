@@ -1,33 +1,49 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { fetchWithTimeout } from './httpClient.js';
 
-const HANDLE_RE = /^[A-Za-z0-9_.-]{1,39}$/;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Public profile surfaces probed by passive HTTP status checks. */
-const PLATFORMS = [
-  { name: 'GitHub', url: (h) => `https://github.com/${h}` },
-  { name: 'Reddit', url: (h) => `https://www.reddit.com/user/${h}/about.json` },
-  { name: 'GitLab', url: (h) => `https://gitlab.com/${h}` },
-  { name: 'Keybase', url: (h) => `https://keybase.io/${h}` },
-];
+const HANDLE_RE = /^[A-Za-z0-9_.-]{1,39}$/;
+const PROBE_TIMEOUT_MS = 6000;
 
 /**
- * Probe a single platform for the presence of a handle.
- * @param {{ name: string, url: (h: string) => string }} platform
+ * Platform-detection dataset — a filtered, vendored snapshot of the
+ * WhatsMyName project (github.com/WebBreacher/WhatsMyName, CC BY-SA 4.0),
+ * limited to GET-only, unprotected entries so unattended server-side
+ * probing stays reliable. See backend/src/connectors/data/wmn-platforms.json.
+ * @type {Array<{ name: string, uri_check: string, e_code: number, e_string: string, m_code: number|null, m_string: string }>}
+ */
+const PLATFORMS = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'data', 'wmn-platforms.json'), 'utf8'),
+).sites;
+
+/**
+ * Probe a single platform: existence is determined by matching both the
+ * expected HTTP status code and (when present) a substring expected in the
+ * response body — status alone is not reliable since many platforms return
+ * 200 for both a real profile and a generic "not found" page.
+ * @param {{ name: string, uri_check: string, e_code: number, e_string: string }} site
  * @param {string} handle
  * @returns {Promise<{ platform: string, found: boolean, status: number | null }>}
  */
-async function probe(platform, handle) {
+async function probe(site, handle) {
+  const url = site.uri_check.replace('{account}', encodeURIComponent(handle));
   try {
-    const res = await fetchWithTimeout(platform.url(handle), { method: 'GET', timeoutMs: 6000 });
-    return { platform: platform.name, found: res.status === 200, status: res.status };
+    const res = await fetchWithTimeout(url, { method: 'GET', timeoutMs: PROBE_TIMEOUT_MS });
+    const body = site.e_string ? await res.text() : '';
+    const found = res.status === site.e_code && (!site.e_string || body.includes(site.e_string));
+    return { platform: site.name, found, status: res.status };
   } catch {
-    return { platform: platform.name, found: false, status: null };
+    return { platform: site.name, found: false, status: null };
   }
 }
 
 /**
  * Grimnir — Alias tracker. Maps a username across public developer/social
- * surfaces via non-intrusive HTTP status probing.
+ * surfaces via non-intrusive HTTP probing, using the vendored WhatsMyName
+ * platform-detection dataset for coverage.
  */
 export const grimnirConnector = {
   id: 'grimnir',
@@ -46,19 +62,14 @@ export const grimnirConnector = {
       return { lines: [`  [x] Invalid handle format: ${query}`], data: { error: 'INVALID_HANDLE' } };
     }
 
-    const lines = [`  -> Traversing public directories for [${handle}]...`];
-    const results = await Promise.all(PLATFORMS.map((p) => probe(p, handle)));
+    const lines = [`  -> Traversing ${PLATFORMS.length} public directories for [${handle}]...`];
+    const results = await Promise.all(PLATFORMS.map((site) => probe(site, handle)));
 
-    for (const r of results) {
-      lines.push(
-        r.found
-          ? `  -> [FOUND]  ${r.platform}`
-          : `  -> [clear]  ${r.platform} (${r.status ?? 'no response'})`,
-      );
+    const hits = results.filter((r) => r.found);
+    for (const r of hits) {
+      lines.push(`  -> [FOUND]  ${r.platform}`);
     }
-
-    const hits = results.filter((r) => r.found).length;
-    lines.push(`  -> Trace complete. ${hits}/${results.length} surface(s) matched.`);
+    lines.push(`  -> Trace complete. ${hits.length}/${results.length} surface(s) matched.`);
 
     return { lines, data: { handle, results } };
   },

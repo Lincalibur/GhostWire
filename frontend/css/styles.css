@@ -80,38 +80,6 @@ body::after {
   box-shadow: 0 0 10px var(--red-glow);
 }
 
-/* ── Portal ───────────────────────────────────────────── */
-.portal-container {
-  position: relative;
-  z-index: 20;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(0, 0, 0, 0.4);
-}
-
-.terminal-window {
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid var(--red-mid);
-  box-shadow: 0 0 24px var(--red-dim);
-  width: 90%;
-  max-width: 460px;
-  padding: 26px;
-  position: relative;
-}
-.terminal-window::before {
-  content: '';
-  position: absolute;
-  top: -1px;
-  left: 10px;
-  right: 10px;
-  height: 1px;
-  background: var(--red);
-  box-shadow: 0 0 8px var(--red);
-}
-
 .terminal-header {
   border-bottom: 1px dashed var(--red-mid);
   padding-bottom: 12px;
@@ -206,20 +174,87 @@ body::after {
   text-shadow: 0 0 6px var(--red-glow);
 }
 
-/* ── Console dashboard ────────────────────────────────── */
-#console-view {
+/* ── Page 2: input ────────────────────────────────────── */
+#input-view {
+  position: relative;
+  z-index: 30;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  padding: 32px 16px;
+  background: var(--bg);
+  overflow-y: auto;
+}
+
+/* Flanking guardian art — breathes on its own (same animation as the intro
+   nexus figure), no hover required. The right side is mirrored via the
+   wrapper's transform so the animated scale on the img itself stays clean. */
+.input-flank {
+  flex: 1;
+  min-width: 0;
+  max-width: 320px;
+  display: flex;
+  justify-content: center;
+  align-self: stretch;
+}
+.input-flank.right {
+  transform: scaleX(-1);
+}
+.input-guardian-img {
+  max-width: 100%;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 15px rgba(0, 0, 0, 0.9));
+  animation: nexus-breath 6s ease-in-out infinite;
+}
+
+.input-form-col {
+  flex: 0 1 640px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.input-form-col .panel-window,
+.input-form-col #btn-run-scan,
+.input-form-col #intake-error {
+  width: 100%;
+}
+
+/* A bit more red pop on the intake form itself. */
+.input-form-col .p-intake {
+  border-color: var(--red-mid);
+  box-shadow: 0 0 24px rgba(208, 18, 18, 0.4), inset 0 0 26px rgba(120, 10, 10, 0.2);
+}
+.intake-field {
+  border-left: 2px solid var(--red-mid);
+  padding-left: 12px;
+}
+.terminal-input-wrapper.bordered:focus-within {
+  border-color: var(--red);
+  box-shadow: 0 0 10px rgba(208, 18, 18, 0.45);
+}
+
+/* ── Page 3: output ───────────────────────────────────── */
+#output-view {
   position: relative;
   z-index: 30;
   width: 100%;
   height: 100%;
   display: none;
   grid-template-columns: 280px 1fr 280px;
-  grid-template-rows: 96px minmax(300px, 46vh) minmax(160px, 1fr) 210px;
+  grid-template-rows: auto auto minmax(200px, 1fr);
   grid-template-areas:
     'sys     feedstatus meta'
-    'engines engines    engines'
-    'module  console    console'
-    'module  console    console';
+    'cards   cards       cards'
+    'console console    console';
   gap: 16px;
   padding: 16px;
   background: var(--bg);
@@ -228,8 +263,7 @@ body::after {
 .p-sys { grid-area: sys; }
 .p-meta { grid-area: meta; }
 .p-feed-status { grid-area: feedstatus; }
-.p-engines { grid-area: engines; }
-.p-module { grid-area: module; }
+.p-cards { grid-area: cards; }
 .p-console { grid-area: console; }
 
 .panel-window {
@@ -311,18 +345,11 @@ body::after {
   50% { opacity: 0.85; }
 }
 
-/* ── RECON_ARSENAL: 3-column split — status cards flank the intake form.
-   Cards are read-only (the form drives execution) but keep the original
-   hover-lift/glow so the panel still feels alive. ─────────────────────── */
-.arsenal-split {
-  display: grid;
-  grid-template-columns: 1fr 1.3fr 1fr;
-  gap: 20px;
-  align-items: stretch;
-}
+/* ── RECON_ARSENAL: one row of read-only status cards, reflecting each
+   module's sweep state as a scan progresses. ──────────────────────────── */
 .tool-gallery {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 14px;
 }
 .tool-card {
@@ -770,14 +797,6 @@ body.intro-locked {
   align-items: center;
   justify-content: center;
   width: 100%;
-  transform-style: preserve-3d;
-  /* Default; JS retargets this to the door center before zooming */
-  transform-origin: 50% 30%;
-  transition: transform 2.2s cubic-bezier(0.75, 0, 0.9, 1), filter 2.2s ease-in;
-}
-#intro-scene.zooming {
-  transform: translateZ(2200px) scale(1.15);
-  filter: blur(5px) brightness(1.2);
 }
 
 /* Gothic doorway around the nexus figure */
@@ -846,15 +865,6 @@ body.intro-locked {
   );
   opacity: 0.9;
 }
-#door-wrap.open .door-panel.left {
-  transform: translateX(-115%);
-  opacity: 0;
-}
-#door-wrap.open .door-panel.right {
-  transform: translateX(115%);
-  opacity: 0;
-}
-
 .nexus-wrapper {
   position: absolute;
   top: 50%;
@@ -862,12 +872,6 @@ body.intro-locked {
   transform: translate(-50%, -50%);
   width: 78%;
   z-index: 10;
-  transition: opacity 1.3s ease, transform 1.3s ease, filter 1.3s ease;
-}
-.nexus-wrapper.fading {
-  opacity: 0;
-  transform: translate(-50%, -70%) scale(1.06);
-  filter: blur(6px);
 }
 .nexus-figure {
   position: relative;
@@ -950,7 +954,7 @@ body.intro-locked {
   padding: 22px 24px 24px;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
   text-align: left;
-  transition: opacity 0.8s ease, transform 0.8s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 .terminal-prompt-box.threshold-hidden {
   opacity: 0;
@@ -1048,27 +1052,51 @@ body.intro-locked {
   transition: opacity 0.45s ease;
 }
 
-/* Pass-through: keep only the flash while the app shows underneath */
-.intro-gate.threshold-pass {
-  background: transparent;
+/* ── Hard glitch-cut exit ─────────────────────────────────
+   Replaces the old door-open/perspective-zoom sequence: a brief
+   RGB-split/static jitter, then the whole gate collapses like a CRT
+   powering off, straight to the app underneath. ──────────────────── */
+.intro-gate.glitching #perspective-wrap,
+.intro-gate.glitching .hud-top-bar,
+.intro-gate.glitching .corner-bracket,
+.intro-gate.glitching .gate-panel {
+  animation: glitch-jitter 0.35s steps(2, end) 1;
 }
-.intro-gate.threshold-pass > *:not(#intro-flash) {
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-/* Black threshold pass-through (no crimson flash) */
-#intro-flash {
+.intro-gate.glitching::after {
+  content: '';
   position: absolute;
   inset: 0;
-  z-index: 200;
-  background: #000;
-  opacity: 0;
+  z-index: 50;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.08) 0px,
+    rgba(255, 255, 255, 0.08) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+  animation: static-flicker 0.1s steps(1) infinite;
   pointer-events: none;
-  transition: opacity 0.85s ease;
 }
-#intro-flash.on {
-  opacity: 1;
+@keyframes glitch-jitter {
+  0% { transform: translate(0, 0); filter: none; }
+  25% { transform: translate(-8px, 3px); filter: drop-shadow(3px 0 0 rgba(255, 20, 60, 0.65)) drop-shadow(-3px 0 0 rgba(0, 220, 255, 0.5)); }
+  50% { transform: translate(6px, -2px); filter: drop-shadow(-3px 0 0 rgba(255, 20, 60, 0.65)) drop-shadow(3px 0 0 rgba(0, 220, 255, 0.5)); }
+  75% { transform: translate(-4px, 2px); filter: none; }
+  100% { transform: translate(0, 0); filter: none; }
+}
+@keyframes static-flicker {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.intro-gate.crt-off {
+  animation: crt-collapse 0.4s cubic-bezier(0.7, 0, 0.9, 1) forwards;
+}
+@keyframes crt-collapse {
+  0% { transform: scale(1, 1); opacity: 1; filter: brightness(1.4); }
+  55% { transform: scale(1, 0.02); opacity: 1; filter: brightness(2.4); }
+  100% { transform: scale(0, 0.02); opacity: 0; filter: brightness(3); }
 }
 
 @media (max-width: 640px) {
@@ -1104,36 +1132,24 @@ body.intro-locked {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
-.terminal-btn.dev {
-  border-style: dashed;
-  border-color: var(--red);
-  color: var(--ok);
-  margin-top: 8px;
-}
 
 /* ── Responsive ───────────────────────────────────────── */
-@media (max-width: 1100px) {
-  #console-view {
-    grid-template-rows: 96px minmax(420px, 52vh) minmax(160px, 1fr) 210px;
-  }
-}
 @media (max-width: 900px) {
-  #console-view {
+  #output-view {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto auto 1fr;
+    grid-template-rows: auto auto auto auto 1fr;
     grid-template-areas:
       'sys'
       'meta'
       'feedstatus'
-      'engines'
-      'module'
+      'cards'
       'console';
     overflow-y: auto;
   }
-  .arsenal-split {
-    grid-template-columns: 1fr;
-  }
   .tool-gallery {
-    flex-direction: row;
+    flex-direction: column;
+  }
+  .input-flank {
+    display: none;
   }
 }

@@ -133,10 +133,10 @@ function typeWithHumanRhythm(el, text, reduced) {
       }
       const ch = text[index++];
       el.textContent += ch;
-      let delay = 35 + ((Math.random() * 50) | 0);
-      if (['.', ':', '?', '!'].includes(ch)) delay += 250 + ((Math.random() * 300) | 0);
-      else if (ch === ' ' || ch === '\n') delay += 20 + ((Math.random() * 60) | 0);
-      else if (Math.random() < 0.08) delay += 150 + ((Math.random() * 200) | 0);
+      let delay = 14 + ((Math.random() * 22) | 0);
+      if (['.', ':', '?', '!'].includes(ch)) delay += 90 + ((Math.random() * 120) | 0);
+      else if (ch === ' ' || ch === '\n') delay += 8 + ((Math.random() * 24) | 0);
+      else if (Math.random() < 0.05) delay += 60 + ((Math.random() * 90) | 0);
       setTimeout(step, delay);
     };
     step();
@@ -209,25 +209,7 @@ export function playIntro(onComplete) {
 
     let done = false;
     const statusEl = document.getElementById('intro-status');
-    const doorWrap = document.getElementById('door-wrap');
-    const nexusWrap = document.getElementById('nexus-wrap');
     const uiPanel = document.getElementById('intro-ui-panel');
-    const scene = document.getElementById('intro-scene');
-    const flash = document.getElementById('intro-flash');
-
-    /**
-     * Aim the perspective zoom at the geometric center of the doorway
-     * (not the bottom / terminal area of the scene).
-     */
-    const aimZoomAtDoor = () => {
-      if (!scene || !doorWrap) return;
-      const s = scene.getBoundingClientRect();
-      const d = doorWrap.getBoundingClientRect();
-      if (!s.width || !s.height) return;
-      const ox = (((d.left + d.width / 2) - s.left) / s.width) * 100;
-      const oy = (((d.top + d.height / 2) - s.top) / s.height) * 100;
-      scene.style.transformOrigin = `${ox.toFixed(2)}% ${oy.toFixed(2)}%`;
-    };
 
     const finish = () => {
       if (done) return;
@@ -248,35 +230,19 @@ export function playIntro(onComplete) {
         resolve();
       };
 
-      // Reduced motion: quick fade, no door/zoom theatrics.
+      // Reduced motion: quick fade, no glitch theatrics.
       if (reduced) {
         overlay.classList.add('gate-dismissed');
         setTimeout(tearDown, 450);
         return;
       }
 
-      // Threshold sequence:
-      // 1) fade UI + figure  2) open door  3) zoom into door center  4) black fade  5) reveal app
+      // Hard glitch-cut: brief RGB-split/static jitter, then a CRT
+      // power-off collapse straight to the app underneath.
       uiPanel?.classList.add('threshold-hidden');
-      nexusWrap?.classList.add('fading');
-      canvas.style.transition = 'opacity 0.8s ease';
-      canvas.style.opacity = '0';
-
-      setTimeout(() => doorWrap?.classList.add('open'), 900);
-      setTimeout(() => {
-        aimZoomAtDoor();
-        // Force reflow so the new transform-origin is applied before zooming.
-        void scene?.offsetWidth;
-        scene?.classList.add('zooming');
-      }, 1500);
-      setTimeout(() => overlay.classList.add('gate-dismissed'), 2200);
-      setTimeout(() => flash?.classList.add('on'), 3000);
-      setTimeout(() => {
-        overlay.classList.add('threshold-pass');
-        document.body.classList.remove('intro-locked');
-      }, 3400);
-      setTimeout(() => flash?.classList.remove('on'), 3900);
-      setTimeout(tearDown, 4500);
+      overlay.classList.add('glitching');
+      setTimeout(() => overlay.classList.add('crt-off'), 350);
+      setTimeout(tearDown, 750);
     };
 
     typeWithHumanRhythm(output, TYPE_TEXT, reduced).then(() => {

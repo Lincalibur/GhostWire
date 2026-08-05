@@ -71,62 +71,113 @@
         </div>
       </div>
     </div>
-
-    <div id="intro-flash" aria-hidden="true"></div>
   </div>
 
   <!-- Ambient audio toggle -->
   <button id="audio-prompt" type="button">AUDIO: OFF</button>
 
   <div id="screen">
-    <!-- ── Gatekeeper portal ─────────────────────────────── -->
-    <section class="portal-container" id="login-view">
-      <div class="terminal-window">
-        <div class="terminal-header">[GHOSTWIRE GATEKEEPER v1.0.0]</div>
+    <!-- ── Page 2: target intake ─────────────────────────── -->
+    <section id="input-view">
+      <div class="input-flank left" aria-hidden="true">
+        <img src="assets/input-guardian.png" alt="" class="input-guardian-img" />
+      </div>
 
-        <div id="login-form-step">
-          <p class="terminal-note">STATUS: RESTRICTED ACCESS AREA // NODE SECURITY HIGH</p>
+      <div class="input-form-col">
+      <div class="panel-window p-intake">
+        <div class="window-header">RECON_ARSENAL // TARGET INTAKE</div>
+        <div class="window-body intake-wrap">
+          <div class="intake-grid" id="intake-grid">
+            <div class="form-group intake-field">
+              <label class="form-label" for="intake-email">
+                EMAIL
+                <span class="intake-caveat">(breach-by-email lookup — sent to the upstream index)</span>
+              </label>
+              <div class="terminal-input-wrapper bordered">
+                <span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-email" class="terminal-input" placeholder="e.g., name@example.com" autocomplete="off" />
+              </div>
+              <label class="form-label" for="intake-password">
+                PASSWORD
+                <span class="intake-caveat">(checked via k-anonymity range query — never sent in full)</span>
+              </label>
+              <div class="terminal-input-wrapper bordered">
+                <span class="terminal-input-prefix">&gt;</span>
+                <input type="password" id="intake-password" class="terminal-input" placeholder="e.g., correcthorsebattery" autocomplete="off" />
+              </div>
+              <span class="intake-status" id="intake-status-v0id">IDLE</span>
+            </div>
 
-          <div class="form-group">
-            <label class="form-label" for="operator-id">OPERATOR IDENTIFIER</label>
-            <div class="terminal-input-wrapper">
-              <span class="terminal-input-prefix">ID:</span>
-              <input type="text" id="operator-id" class="terminal-input" placeholder="_"
-                     autocomplete="off" autofocus />
+            <div class="form-group intake-field">
+              <label class="form-label" for="intake-username">
+                USERNAME
+                <span class="intake-caveat">(checked against 640+ platforms — a positive match means an account exists, not that it belongs to your target)</span>
+              </label>
+              <div class="terminal-input-wrapper bordered">
+                <span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-username" class="terminal-input" placeholder="e.g., net_phantom" autocomplete="off" />
+              </div>
+              <span class="intake-status" id="intake-status-grimnir">IDLE</span>
+            </div>
+
+            <div class="form-group intake-field">
+              <label class="form-label" for="intake-domain">DOMAIN</label>
+              <div class="terminal-input-wrapper bordered">
+                <span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-domain" class="terminal-input" placeholder="e.g., example.com" autocomplete="off" />
+              </div>
+              <span class="intake-status" id="intake-status-mspect">IDLE</span>
+            </div>
+
+            <div class="form-group intake-field">
+              <label class="form-label" for="intake-org">ORG / KEYWORD</label>
+              <div class="terminal-input-wrapper bordered">
+                <span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-org" class="terminal-input" placeholder="e.g., acme" autocomplete="off" />
+              </div>
+              <span class="intake-status" id="intake-status-wiretap">IDLE</span>
+            </div>
+
+            <div class="form-group intake-field">
+              <label class="form-label" for="intake-shodan">
+                IP OR DOMAIN
+                <span class="intake-caveat">(free Shodan InternetDB lookup — open ports / known CVEs, no key required)</span>
+              </label>
+              <div class="terminal-input-wrapper bordered">
+                <span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-shodan" class="terminal-input" placeholder="e.g., 1.1.1.1 or example.com" autocomplete="off" />
+              </div>
+              <span class="intake-status" id="intake-status-shodan">IDLE</span>
             </div>
           </div>
-
-          <div class="form-group">
-            <label class="form-label" for="operator-pass">ACCESS PASSPHRASE</label>
-            <div class="terminal-input-wrapper">
-              <span class="terminal-input-prefix">PW:</span>
-              <input type="password" id="operator-pass" class="terminal-input" placeholder="_"
-                     autocomplete="off" />
-            </div>
-          </div>
-
-          <button class="terminal-btn" id="btn-submit-operator" type="button">Submit Operator ID</button>
         </div>
+      </div>
 
-        <div id="otp-form-step" class="hidden">
-          <p class="terminal-note alert" id="otp-channel-note">TOKEN ROUTED VIA OOB CHANNEL</p>
+      <div class="panel-window p-module">
+        <div class="window-header">Wraith // METADATA EXTRACTOR</div>
+        <div class="window-body">
           <div class="form-group">
-            <label class="form-label" for="otp-token">ENTER DYNAMIC TOKEN</label>
-            <div class="terminal-input-wrapper">
-              <span class="terminal-input-prefix">OTP:</span>
-              <input type="text" id="otp-token" class="terminal-input" placeholder="_"
-                     autocomplete="off" inputmode="numeric" />
+            <label class="form-label">IMAGE FILE</label>
+            <div class="dropzone" id="metadata-dropzone">
+              <input type="file" id="metadata-file-input" accept="image/jpeg" hidden />
+              <span class="dropzone-text">[ DROP IMAGE OR CLICK TO SELECT ]</span>
             </div>
+            <div class="metadata-result hidden" id="metadata-result"></div>
           </div>
-          <button class="terminal-btn" id="btn-submit-otp" type="button">Verify Operator Token</button>
         </div>
+      </div>
 
-        <p class="portal-error" id="portal-error"></p>
+      <button class="terminal-btn" id="btn-run-scan" type="button">Run Full Scan</button>
+      <p class="portal-error" id="intake-error"></p>
+      </div>
+
+      <div class="input-flank right" aria-hidden="true">
+        <img src="assets/input-guardian.png" alt="" class="input-guardian-img" />
       </div>
     </section>
 
-    <!-- ── Operator console (post-auth) ──────────────────── -->
-    <section id="console-view" class="hidden">
+    <!-- ── Page 3: scan output (post-run) ────────────────── -->
+    <section id="output-view" class="hidden">
       <div class="panel-window p-sys">
         <div class="window-header">GHOSTWIRE // SYS_NODE</div>
         <div class="window-body">
@@ -153,73 +204,11 @@
         </div>
       </div>
 
-      <div class="panel-window p-engines">
-        <div class="window-header">RECON_ARSENAL // TARGET INTAKE</div>
-        <div class="window-body intake-wrap">
-          <div class="arsenal-split">
-            <div class="tool-gallery" id="tool-gallery-left"></div>
-
-            <div class="intake-grid" id="intake-grid">
-              <div class="form-group intake-field">
-                <label class="form-label" for="intake-email">
-                  EMAIL
-                  <span class="intake-caveat">(checked as a k-anonymity credential lookup, not a breach-by-email search)</span>
-                </label>
-                <div class="terminal-input-wrapper bordered">
-                  <span class="terminal-input-prefix">&gt;</span>
-                  <input type="text" id="intake-email" class="terminal-input" placeholder="e.g., name@example.com" autocomplete="off" />
-                </div>
-                <span class="intake-status" id="intake-status-v0id">IDLE</span>
-              </div>
-
-              <div class="form-group intake-field">
-                <label class="form-label" for="intake-username">USERNAME</label>
-                <div class="terminal-input-wrapper bordered">
-                  <span class="terminal-input-prefix">&gt;</span>
-                  <input type="text" id="intake-username" class="terminal-input" placeholder="e.g., net_phantom" autocomplete="off" />
-                </div>
-                <span class="intake-status" id="intake-status-grimnir">IDLE</span>
-              </div>
-
-              <div class="form-group intake-field">
-                <label class="form-label" for="intake-domain">DOMAIN</label>
-                <div class="terminal-input-wrapper bordered">
-                  <span class="terminal-input-prefix">&gt;</span>
-                  <input type="text" id="intake-domain" class="terminal-input" placeholder="e.g., example.com" autocomplete="off" />
-                </div>
-                <span class="intake-status" id="intake-status-mspect">IDLE</span>
-              </div>
-
-              <div class="form-group intake-field">
-                <label class="form-label" for="intake-org">ORG / KEYWORD</label>
-                <div class="terminal-input-wrapper bordered">
-                  <span class="terminal-input-prefix">&gt;</span>
-                  <input type="text" id="intake-org" class="terminal-input" placeholder="e.g., acme" autocomplete="off" />
-                </div>
-                <span class="intake-status" id="intake-status-wiretap">IDLE</span>
-              </div>
-            </div>
-
-            <div class="tool-gallery" id="tool-gallery-right"></div>
-          </div>
-
-          <button class="terminal-btn" id="btn-run-audit" type="button">Run Full Audit</button>
+      <div class="panel-window p-cards">
+        <div class="window-body">
+          <div class="tool-gallery" id="tool-gallery"></div>
           <div class="scan-loader" id="scan-loader"></div>
           <div class="module-state">SWEEP STATE: <span id="audit-status" class="accent">READY</span></div>
-        </div>
-      </div>
-
-      <div class="panel-window p-module">
-        <div class="window-header">Wraith // METADATA EXTRACTOR</div>
-        <div class="window-body">
-          <div class="form-group">
-            <label class="form-label">IMAGE FILE</label>
-            <div class="dropzone" id="metadata-dropzone">
-              <input type="file" id="metadata-file-input" accept="image/jpeg" hidden />
-              <span class="dropzone-text">[ DROP IMAGE OR CLICK TO SELECT ]</span>
-            </div>
-            <div class="metadata-result hidden" id="metadata-result"></div>
-          </div>
         </div>
       </div>
 

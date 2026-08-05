@@ -17,7 +17,7 @@ export const TOOL_VISUALS = {
     toolId: 'TOOL_02',
     bgText: 'OBSCURE',
     title: 'Breach Scanner',
-    desc: 'Assess credential exposure against known breach corpora.',
+    desc: 'Cross-reference email/password against known breach and exposure corpora.',
     image: 'assets/tools/tool2.png',
     alt: 'Blindfolded silver crown — breach checker',
   },
@@ -25,7 +25,7 @@ export const TOOL_VISUALS = {
     toolId: 'TOOL_03',
     bgText: 'ALIAS',
     title: 'Alias Tracker',
-    desc: 'Enumerate public social / developer profiles for a handle.',
+    desc: 'Enumerate public social / developer profiles across 640+ platforms.',
     image: 'assets/tools/tool3.png',
     alt: 'Venetian mask — social footprint',
   },
@@ -36,6 +36,15 @@ export const TOOL_VISUALS = {
     desc: 'Probe cloud-bucket namespaces for open signal leakage.',
     image: 'assets/tools/tool4.png',
     alt: 'Inked halo — deep scan / leakage',
+  },
+  shodan: {
+    toolId: 'TOOL_05',
+    bgText: 'EXPOSE',
+    title: 'Infra Scanner',
+    desc: 'Surface open ports and known CVEs indexed for a host.',
+    // TODO: no dedicated art yet — reusing the Leak Sniffer cutout as a placeholder.
+    image: 'assets/tools/tool4.png',
+    alt: 'Infrastructure exposure scanner',
   },
 };
 
