@@ -132,6 +132,23 @@ async function runJob(job) {
     setFieldStatus(job.moduleId, 'COMPLETE', 'ok');
     return true;
   } catch (err) {
+    // The silent session bootstrap on page load can occasionally lose the
+    // race (e.g. a dev-server restart) and leave the operator unauthenticated
+    // with no visible sign of it. Try once to re-establish a session and
+    // retry the job before surfacing an error.
+    if (err.status === 401) {
+      try {
+        await api.auth.devLogin();
+        const res = await api.recon.query(job.moduleId, job.query);
+        writeFeed(res.lines);
+        recordResult(job.moduleId, job.label, res.data);
+        setFieldStatus(job.moduleId, 'COMPLETE', 'ok');
+        return true;
+      } catch {
+        /* fall through to error reporting below */
+      }
+    }
+
     writeFeed(`  [x] ${meta.label}: ${err.message}`);
     const label =
       err.code === 'RECON_RATE_LIMITED' ? 'THROTTLED' : err.code === 'TIMEOUT' ? 'TIMEOUT' : 'ERROR';

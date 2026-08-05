@@ -56,6 +56,32 @@ function showDevBadge(health) {
   document.body.appendChild(badge);
 }
 
+/**
+ * Try to establish a session, retrying briefly on failure. Guards against a
+ * transient hiccup (e.g. the dev server's `--watch` restart-on-boot) leaving
+ * the operator silently unauthenticated for the whole page load.
+ * @param {boolean} devMode
+ * @returns {Promise<string|null>} the operator handle, or null if still unauthenticated
+ */
+async function establishSession(devMode) {
+  const attempts = devMode ? 3 : 1;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await api.auth.session();
+      return res?.operator?.handle || null;
+    } catch {
+      if (!devMode) return null;
+      try {
+        const res = await api.auth.devLogin();
+        return res?.operator?.handle || null;
+      } catch {
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, 400));
+      }
+    }
+  }
+  return null;
+}
+
 /** Application entrypoint. */
 async function main() {
   initAudioToggle();
@@ -78,20 +104,7 @@ async function main() {
   // Best-effort, silent session bootstrap: resume an existing session, or
   // (dev mode only) auto-login, so recon calls are authorized once the
   // operator starts a scan. No UI is gated on this succeeding.
-  let handle = null;
-  try {
-    const res = await api.auth.session();
-    handle = res?.operator?.handle || null;
-  } catch {
-    if (devMode) {
-      try {
-        const res = await api.auth.devLogin();
-        handle = res?.operator?.handle || null;
-      } catch {
-        /* stays unauthenticated — recon calls will surface as errors per job */
-      }
-    }
-  }
+  const handle = await establishSession(devMode);
   if (handle) {
     const handleEl = document.getElementById('active-op-handle');
     if (handleEl) handleEl.textContent = handle.toUpperCase();
