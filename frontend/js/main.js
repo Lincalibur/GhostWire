@@ -1,5 +1,6 @@
 import { api } from './api.js';
 import { AmbientHum } from './visuals/audio.js';
+import { initGlobe } from './visuals/globe.js';
 import { initOutputView, initInputView, loadModuleMetadata } from './ui/console.js';
 import { playIntro } from './ui/intro.js';
 import { initMetadataTool } from './ui/metadataTool.js';
@@ -85,6 +86,7 @@ async function establishSession(devMode) {
 /** Application entrypoint. */
 async function main() {
   initAudioToggle();
+  initGlobe();
   initMetadataTool();
   initReportPanel();
   initOutputView(showInputView);

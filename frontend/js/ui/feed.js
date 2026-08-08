@@ -1,12 +1,35 @@
 /**
- * Append one or more lines to the console output feed, auto-scrolling to the
- * newest entry. Line class is inferred from a lightweight prefix convention.
+ * Type a single line into `el` character by character, auto-scrolling `feed`
+ * as it grows.
+ * @param {HTMLElement} el
+ * @param {string} text
+ * @param {HTMLElement} feed
+ * @returns {void}
+ */
+function typeFeedLine(el, text, feed) {
+  let i = 0;
+  const step = () => {
+    el.textContent = text.slice(0, i);
+    feed.scrollTop = feed.scrollHeight;
+    i++;
+    if (i <= text.length) setTimeout(step, 10);
+  };
+  step();
+}
+
+/**
+ * Append one or more lines to the console output feed, typing each one in
+ * and auto-scrolling to the newest entry. Line class is inferred from a
+ * lightweight prefix convention.
  * @param {string|string[]} lines
  * @returns {void}
  */
 export function writeFeed(lines) {
   const feed = document.getElementById('log-feed');
   if (!feed) return;
+
+  const reduced =
+    window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const arr = Array.isArray(lines) ? lines : [lines];
   for (const line of arr) {
@@ -18,8 +41,9 @@ export function writeFeed(lines) {
       div.classList.add('alert');
     else if (line.startsWith('[!]') || line.startsWith('SYSTEM:')) div.classList.add('system');
 
-    div.textContent = line;
     feed.appendChild(div);
+    if (reduced) div.textContent = line;
+    else typeFeedLine(div, line, feed);
   }
   feed.scrollTop = feed.scrollHeight;
 }
