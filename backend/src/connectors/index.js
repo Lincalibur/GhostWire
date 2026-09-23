@@ -3,6 +3,8 @@ import { wiretapConnector } from './wiretap.connector.js';
 import { grimnirConnector } from './grimnir.connector.js';
 import { v0idConnector } from './v0id.connector.js';
 import { shodanConnector } from './shodan.connector.js';
+import { dossierConnector } from './dossier.connector.js';
+import { profilerConnector } from './profiler.connector.js';
 
 /**
  * Registry of all available recon connectors, keyed by id.
@@ -14,6 +16,8 @@ export const connectors = {
   [grimnirConnector.id]: grimnirConnector,
   [v0idConnector.id]: v0idConnector,
   [shodanConnector.id]: shodanConnector,
+  [dossierConnector.id]: dossierConnector,
+  [profilerConnector.id]: profilerConnector,
 };
 
 /**

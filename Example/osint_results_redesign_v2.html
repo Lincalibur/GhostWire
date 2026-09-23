@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GHOSTWIRE // SYS_NODE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #06090b;
+    --bg-panel: #0a0f13;
+    --bg-panel-alt: #0d1418;
+    --border: #162a30;
+    --border-bright: #2c5561;
+    --cyan: #4fd8e8;
+    --cyan-dim: #2f6873;
+    --amber: #ffab5e;
+    --amber-dim: #8a5a2e;
+    --magenta: #ff5da2;
+    --magenta-dim: #7a2f52;
+    --red: #ff5b5b;
+    --red-dim: #7a2f2f;
+    --yellow: #e8d44f;
+    --green: #7fe89a;
+    --green-dim: #2f6b45;
+    --text: #b9d4da;
+    --text-dim: #4d6870;
+    --text-faint: #2e454c;
+    --mono-head: 'Share Tech Mono', monospace;
+    --mono-body: 'JetBrains Mono', monospace;
+    --myth: 'Cinzel', serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--mono-body); }
+
+  .grain{ position:fixed; inset:0; pointer-events:none; z-index:50; opacity:.045; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"); }
+  .scanlines{ position:fixed; inset:0; pointer-events:none; z-index:51; opacity:.32;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,.22) 3px); }
+  .vignette{ position:fixed; inset:0; pointer-events:none; z-index:49;
+    background:radial-gradient(ellipse at 50% 20%, transparent 40%, rgba(0,0,0,.6) 100%); }
+
+  .app{ position:relative; z-index:1; max-width:1560px; margin:0 auto; padding:26px 30px 70px; }
+
+  .panel{ background:linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel-alt) 100%); border:1px solid var(--border); position:relative; }
+  .panel::before{ content:""; position:absolute; top:0; left:0; width:100%; height:2px; background:linear-gradient(90deg, var(--cyan-dim), transparent 60%); }
+  .panel-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-family:var(--mono-head); font-size:13px; letter-spacing:.14em; color:var(--cyan); padding:12px 16px; border-bottom:1px solid var(--border); }
+  .panel-head .title{ display:flex; align-items:center; gap:8px; }
+  .panel-head .sq{ width:7px; height:7px; background:var(--yellow); box-shadow:0 0 6px var(--yellow); flex:none; }
+  .panel-head:hover .title{ text-shadow: -1px 0 var(--magenta), 1px 0 var(--cyan); }
+  .audio-badge{ font-size:11px; letter-spacing:.1em; color:var(--text-dim); border:1px solid var(--border-bright); padding:3px 8px; cursor:pointer; }
+  .audio-badge.on{ color:var(--green); border-color:var(--green); }
+
+  .toprow{ display:grid; grid-template-columns: 1.6fr 1fr; gap:18px; margin-bottom:20px; }
+  @media (max-width:980px){ .toprow{ grid-template-columns:1fr; } }
+  .kv{ padding:16px; font-size:13px; }
+  .kv .row{ display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dotted rgba(255,255,255,.03); }
+  .kv .label{ color:var(--text-dim); letter-spacing:.06em; }
+  .kv .val.strong{ color:var(--green); }
+  .kv .val.cyan{ color:var(--cyan); }
+  .kv .val.amber{ color:var(--amber); }
+
+  .op-actions{ padding:14px 16px 16px; display:flex; flex-direction:column; gap:10px; }
+  .btn{ text-align:center; padding:11px; font-family:var(--mono-head); letter-spacing:.16em; font-size:12px; border:1px solid var(--border-bright); color:var(--text-dim); cursor:pointer; transition:.2s; background:transparent; }
+  .btn.info:hover{ color:var(--cyan); border-color:var(--cyan); box-shadow:0 0 16px -4px var(--cyan-dim); }
+  .btn.danger{ color:var(--red); border-color:var(--red-dim); }
+  .btn.danger:hover{ border-color:var(--red); box-shadow:0 0 16px -4px var(--red-dim); background:rgba(255,91,91,.05); }
+
+  /* ---------- bottom split: console + detail rail ---------- */
+  .bottom-split{ display:grid; grid-template-columns: 1fr 380px; gap:18px; align-items:stretch; }
+  @media (max-width:1180px){ .bottom-split{ grid-template-columns: 1fr; } }
+  .bottom-split .panel{ display:flex; flex-direction:column; }
+
+  .tools{ display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-bottom:20px; }
+  @media (max-width:1180px){ .tools{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:640px){ .tools{ grid-template-columns:1fr; } }
+
+  .tool{
+    position:relative; background:linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel-alt) 100%);
+    border:1px solid var(--border); padding:16px; min-height:190px; overflow:hidden;
+    display:flex; flex-direction:column; justify-content:flex-end; transition:border-color .2s, transform .15s;
+    cursor:default;
+  }
+  .tool.clickable{ cursor:pointer; }
+  .tool.clickable:hover{ border-color:var(--border-bright); transform:translateY(-2px); }
+  .tool.selected{ border-color:var(--magenta); box-shadow:0 0 0 1px var(--magenta-dim), 0 0 24px -6px var(--magenta-dim); }
+
+  .tool .corner{ position:absolute; top:0; right:0; width:0; height:0; border-style:solid; border-width:0 22px 22px 0; border-color:transparent; z-index:2; }
+  .tool.match .corner{ border-color:transparent var(--magenta) transparent transparent; filter:drop-shadow(0 0 4px var(--magenta-dim)); }
+  .tool.clear .corner{ border-color:transparent var(--green) transparent transparent; opacity:.85; }
+  .tool.idle .corner{ border-color:transparent var(--yellow) transparent transparent; opacity:.7; }
+
+  .tool .myth{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:.14; z-index:0; }
+  .tool .myth svg{ width:78%; height:78%; }
+  .tool .watermark{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-6deg);
+    font-family:var(--myth); font-size:32px; letter-spacing:.12em; color:rgba(255,255,255,.05); z-index:0; white-space:nowrap; }
+  .tool-id{ position:relative; z-index:2; font-size:10px; letter-spacing:.1em; color:var(--text-dim); margin-bottom:6px; }
+  .tool-name{ position:relative; z-index:2; font-family:var(--myth); font-size:17px; color:var(--text); margin-bottom:6px; }
+  .tool-desc{ position:relative; z-index:2; font-size:11px; color:var(--text-faint); line-height:1.5; margin-bottom:12px; }
+  .badgerow{ position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .badge{ display:inline-block; font-size:10px; letter-spacing:.12em; padding:4px 10px; border:1px solid; width:fit-content; }
+  .badge.match{ color:var(--magenta); border-color:var(--magenta-dim); animation:pulseMatch 2s infinite; }
+  .badge.clear{ color:var(--green); border-color:var(--green-dim); }
+  .badge.idle{ color:var(--cyan-dim); border-color:var(--border-bright); }
+  @keyframes pulseMatch{ 0%,100%{ box-shadow:0 0 0 rgba(255,93,162,0);} 50%{ box-shadow:0 0 10px -1px var(--magenta-dim);} }
+  .inspect-hint{ font-size:9px; letter-spacing:.1em; color:var(--text-faint); }
+  .tool.match:hover .inspect-hint{ color:var(--magenta); }
+
+  .banner{ display:flex; align-items:center; gap:10px; padding:14px 18px; border:1px solid var(--border); background:var(--bg-panel); font-family:var(--mono-head); letter-spacing:.1em; font-size:13px; color:var(--amber); }
+  .sweepstate{ padding:8px 18px 18px; font-size:12px; color:var(--text-dim); letter-spacing:.06em; border:1px solid var(--border); border-top:none; background:var(--bg-panel-alt); margin-bottom:20px; }
+  .sweepstate b{ color:var(--magenta); }
+
+  .console{ font-family:var(--mono-body); font-size:12.5px; line-height:1.9; padding:16px 18px 20px; max-height:300px; overflow-y:auto; }
+  .console .ln{ display:flex; gap:10px; }
+  .console .ts{ color:var(--text-faint); flex:none; }
+  .console .tag{ flex:none; width:22px; }
+  .console .msg{ white-space:pre-wrap; word-break:break-word; }
+  .lvl-err .tag, .lvl-err .msg{ color:var(--red); }
+  .lvl-warn .tag, .lvl-warn .msg{ color:var(--amber); }
+  .lvl-info .tag, .lvl-info .msg{ color:var(--cyan); }
+  .lvl-ok .tag, .lvl-ok .msg{ color:var(--green); }
+  .console .cursor-line{ display:flex; gap:6px; color:var(--cyan); }
+  .console .cursor-line .blink{ width:7px; height:14px; background:var(--cyan); animation:blink 1s steps(1) infinite; }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  /* ---------- detail rail ---------- */
+  .rail-empty{ height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; text-align:center; color:var(--text-faint); font-size:12px; letter-spacing:.1em; line-height:1.8; }
+  .rail-empty .glyph{ font-size:28px; color:var(--text-faint); margin-bottom:10px; }
+  .rail-body{ height:100%; display:flex; flex-direction:column; }
+  .preview{ flex:1; }
+
+  .rail-body{ padding:0; }
+  .rail-source{ padding:16px 18px; border-bottom:1px solid var(--border); }
+  .rail-source .name{ font-family:var(--myth); font-size:18px; color:var(--magenta); margin-bottom:4px; }
+  .rail-source .meta{ font-size:11px; color:var(--text-dim); letter-spacing:.06em; }
+
+  .confidence{ padding:14px 18px; border-bottom:1px solid var(--border); }
+  .confidence .label{ font-size:10px; letter-spacing:.1em; color:var(--text-dim); margin-bottom:6px; }
+  .confidence-bar{ height:6px; background:var(--bg); border:1px solid var(--border-bright); overflow:hidden; }
+  .confidence-fill{ height:100%; background:linear-gradient(90deg, var(--magenta-dim), var(--magenta)); }
+  .confidence .pct{ font-size:11px; color:var(--magenta); margin-top:6px; }
+
+  .exposed{ padding:14px 18px; border-bottom:1px solid var(--border); }
+  .exposed .label{ font-size:10px; letter-spacing:.1em; color:var(--text-dim); margin-bottom:10px; }
+  .chip-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{ font-size:10.5px; letter-spacing:.06em; padding:5px 10px; border:1px solid var(--border-bright); color:var(--text); background:var(--bg-input, #060a0c); }
+  .chip.hot{ color:var(--amber); border-color:var(--amber-dim); }
+
+  .preview{ padding:14px 18px; }
+  .preview .label{ font-size:10px; letter-spacing:.1em; color:var(--text-dim); margin-bottom:10px; }
+  .preview-row{ display:flex; justify-content:space-between; font-size:12px; padding:6px 0; border-bottom:1px dotted rgba(255,255,255,.04); }
+  .preview-row .k{ color:var(--text-dim); }
+  .preview-row .v{ color:var(--text); font-family:var(--mono-body); }
+  .preview-note{ margin-top:12px; font-size:10px; color:var(--text-faint); line-height:1.6; letter-spacing:.02em; }
+
+  .rail-actions{ padding:14px 18px 18px; display:flex; gap:8px; }
+  .rail-actions .btn{ flex:1; font-size:10.5px; padding:9px; }
+</style>
+</head>
+<body>
+
+  <div class="grain"></div>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+
+  <div class="app">
+
+    <div class="toprow">
+      <div class="panel">
+        <div class="panel-head"><span class="title"><span class="sq"></span>GHOSTWIRE // SYS_NODE</span></div>
+        <div class="kv">
+          <div class="row"><span class="label">STATUS</span><span class="val strong">ACTIVE</span></div>
+          <div class="row"><span class="label">NODE</span><span class="val cyan">GW-991823</span></div>
+          <div class="row"><span class="label">LATENCY</span><span class="val cyan" id="latency">12ms</span></div>
+          <div class="row"><span class="label">BANDWIDTH</span><span class="val cyan">1.2 GB/s</span></div>
+          <div class="row"><span class="label">FEED</span><span class="val strong">SECURE</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <span class="title"><span class="sq"></span>OPERATOR_META</span>
+          <span class="audio-badge" id="audioBadge">AUDIO: OFF</span>
+        </div>
+        <div class="kv" style="padding-bottom:0;">
+          <div class="row"><span class="label">ID</span><span class="val amber">UNKNOWN</span></div>
+          <div class="row"><span class="label">AUTH</span><span class="val amber">LEVEL_4</span></div>
+        </div>
+        <div class="op-actions">
+          <div class="btn info">GENERATE AUDIT REPORT</div>
+          <div class="btn danger">TERMINATE SESSION</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tools" id="toolGrid">
+          <div class="tool match clickable" data-tool="breach">
+            <div class="corner"></div>
+            <div class="myth"><svg viewBox="0 0 100 100"><circle cx="50" cy="34" r="16" fill="none" stroke="var(--text)" stroke-width="1"/><path d="M20 90 Q50 55 80 90" fill="none" stroke="var(--text)" stroke-width="1"/><path d="M30 18 L50 6 L70 18" fill="none" stroke="var(--text)" stroke-width="1"/></svg></div>
+            <div class="watermark">OBSCURE</div>
+            <div class="tool-id">[ TOOL_02 ]</div>
+            <div class="tool-name">Breach Scanner</div>
+            <div class="tool-desc">Cross-reference email/password against known breach and exposure corpora.</div>
+            <div class="badgerow"><span class="badge match">MATCH FOUND</span><span class="inspect-hint">CLICK TO INSPECT →</span></div>
+          </div>
+
+          <div class="tool match clickable" data-tool="alias">
+            <div class="corner"></div>
+            <div class="myth"><svg viewBox="0 0 100 100"><circle cx="50" cy="34" r="16" fill="none" stroke="var(--text)" stroke-width="1"/><path d="M20 90 Q50 55 80 90" fill="none" stroke="var(--text)" stroke-width="1"/><circle cx="43" cy="32" r="2" fill="var(--text)"/><circle cx="57" cy="32" r="2" fill="var(--text)"/></svg></div>
+            <div class="watermark">ALIAS</div>
+            <div class="tool-id">[ TOOL_03 ]</div>
+            <div class="tool-name">Alias Tracker</div>
+            <div class="tool-desc">Enumerate public social / developer profiles across 640+ platforms.</div>
+            <div class="badgerow"><span class="badge match">MATCH FOUND</span><span class="inspect-hint">CLICK TO INSPECT →</span></div>
+          </div>
+
+          <div class="tool clear">
+            <div class="corner"></div>
+            <div class="myth"><svg viewBox="0 0 100 100"><circle cx="50" cy="34" r="16" fill="none" stroke="var(--text)" stroke-width="1"/><path d="M20 90 Q50 55 80 90" fill="none" stroke="var(--text)" stroke-width="1"/><path d="M34 22 Q50 8 66 22" fill="none" stroke="var(--text)" stroke-width="1"/></svg></div>
+            <div class="watermark">RECON</div>
+            <div class="tool-id">[ TOOL_01 ]</div>
+            <div class="tool-name">Domain Recon</div>
+            <div class="tool-desc">Footprint DNS / IP infrastructure via live DoH resolution.</div>
+            <div class="badgerow"><span class="badge clear">CLEAR</span><span class="inspect-hint">&nbsp;</span></div>
+          </div>
+
+          <div class="tool clear">
+            <div class="corner"></div>
+            <div class="myth"><svg viewBox="0 0 100 100"><circle cx="50" cy="34" r="16" fill="none" stroke="var(--text)" stroke-width="1"/><path d="M20 90 Q50 55 80 90" fill="none" stroke="var(--text)" stroke-width="1"/><path d="M38 34 L44 40 L62 24" fill="none" stroke="var(--text)" stroke-width="1"/></svg></div>
+            <div class="watermark">LEAK</div>
+            <div class="tool-id">[ TOOL_04 ]</div>
+            <div class="tool-name">Leak Sniffer</div>
+            <div class="tool-desc">Probe cloud-bucket namespaces for open signal leakage.</div>
+            <div class="badgerow"><span class="badge clear">CLEAR</span><span class="inspect-hint">&nbsp;</span></div>
+          </div>
+
+          <div class="tool idle">
+            <div class="corner"></div>
+            <div class="myth"><svg viewBox="0 0 100 100"><circle cx="50" cy="34" r="16" fill="none" stroke="var(--text)" stroke-width="1"/><path d="M20 90 Q50 55 80 90" fill="none" stroke="var(--text)" stroke-width="1"/><rect x="42" y="26" width="16" height="16" fill="none" stroke="var(--text)" stroke-width="1"/></svg></div>
+            <div class="watermark">ERASE</div>
+            <div class="tool-id">[ TOOL_05 ]</div>
+            <div class="tool-name">Infra Scanner</div>
+            <div class="tool-desc">Surface open ports and known CVEs indexed for a host.</div>
+            <div class="badgerow"><span class="badge idle">IDLE</span><span class="inspect-hint">&nbsp;</span></div>
+          </div>
+        </div>
+
+    <div class="banner">&#9776;&nbsp; SWEEP COMPLETE — 2 MATCH(ES) FOUND</div>
+    <div class="sweepstate">SWEEP STATE: <b>COMPLETE (2 MATCHES)</b></div>
+
+    <div class="bottom-split">
+      <div class="panel">
+        <div class="panel-head">
+          <span class="title"><span class="sq"></span>CONSOLE_OUTPUT_LOGS</span>
+          <span style="font-size:10px; color:var(--text-dim); letter-spacing:.1em;">AUTO-SCROLL: ON</span>
+        </div>
+        <div class="console" id="console" style="flex:1; max-height:none;">
+            <div class="ln lvl-warn"><span class="ts">00:00.44</span><span class="tag">[!]</span><span class="msg">FULL SCAN INITIATED // 5 module(s) queued</span></div>
+            <div class="ln lvl-warn"><span class="ts">00:00.51</span><span class="tag">[!]</span><span class="msg">EXEC: grimnir scan (breach corpus)...</span></div>
+            <div class="ln lvl-warn"><span class="ts">00:00.58</span><span class="tag">[!]</span><span class="msg">EXEC: mspect scan (alias enum)...</span></div>
+            <div class="ln lvl-ok"><span class="ts">00:01.62</span><span class="tag">[✓]</span><span class="msg">grimnir: 1 match — record dated 2019-08-14</span></div>
+            <div class="ln lvl-ok"><span class="ts">00:01.88</span><span class="tag">[✓]</span><span class="msg">mspect: 1 match — 3 platform(s) linked</span></div>
+            <div class="ln lvl-info"><span class="ts">00:02.05</span><span class="tag">[i]</span><span class="msg">v0id, wiretap: no exposure found</span></div>
+            <div class="ln lvl-info"><span class="ts">00:02.30</span><span class="tag">[i]</span><span class="msg">SWEEP COMPLETE — select a flagged module above to inspect record detail.</span></div>
+          <div class="cursor-line"><span class="ts">&nbsp;</span><span>&gt;</span><span class="blink"></span></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: detail rail -->
+      <div class="panel rail">
+        <div class="panel-head"><span class="title"><span class="sq"></span>RECORD_DETAIL</span></div>
+        <div id="railContent" style="flex:1;">
+          <div class="rail-empty">
+            <div class="glyph">&#9670;</div>
+            SELECT A FLAGGED RESULT<br>TO INSPECT RECORD DETAIL
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+  const records = {
+    breach: {
+      name: 'grimnir // breach corpus',
+      meta: 'SOURCE: exposed_2019_collection · DATE: 2019-08-14',
+      confidence: 92,
+      exposed: [
+        {label:'EMAIL', hot:false}, {label:'PASSWORD_HASH (SHA1)', hot:true},
+        {label:'IP_ADDRESS', hot:false}, {label:'PHONE', hot:true}
+      ],
+      preview: [
+        ['Email','j***********@gmail.com'],
+        ['Password hash','sha1:8f3a9c...(masked)'],
+        ['IP (last seen)','203.0.113.•••'],
+        ['Phone','+1 (•••) •••-4471'],
+        ['Records in breach','2.4M']
+      ],
+      note: 'Raw credential values are masked by default. Full record disclosure requires elevated AUTH and is logged to session audit.'
+    },
+    alias: {
+      name: 'mspect // alias enumeration',
+      meta: 'SOURCE: public platform index · CHECKED: 640+ platforms',
+      confidence: 78,
+      exposed: [
+        {label:'USERNAME MATCH', hot:false}, {label:'PROFILE PHOTO', hot:false}, {label:'BIO TEXT', hot:false}
+      ],
+      preview: [
+        ['Platforms matched','3 of 640'],
+        ['Handle','net_phantom'],
+        ['Oldest account','~2016'],
+        ['Public repos linked','2'],
+      ],
+      note: 'A positive match means an account with this handle exists on these platforms — not confirmed ownership by the target.'
+    }
+  };
+
+  function renderRail(key){
+    const r = records[key];
+    document.querySelectorAll('.tool').forEach(t=>t.classList.remove('selected'));
+    document.querySelector(`.tool[data-tool="${key}"]`).classList.add('selected');
+
+    const chips = r.exposed.map(c => `<span class="chip ${c.hot?'hot':''}">${c.label}</span>`).join('');
+    const rows = r.preview.map(([k,v]) => `<div class="preview-row"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+
+    document.getElementById('railContent').innerHTML = `
+      <div class="rail-body">
+        <div class="rail-source">
+          <div class="name">${r.name}</div>
+          <div class="meta">${r.meta}</div>
+        </div>
+        <div class="confidence">
+          <div class="label">MATCH CONFIDENCE</div>
+          <div class="confidence-bar"><div class="confidence-fill" style="width:${r.confidence}%"></div></div>
+          <div class="pct">${r.confidence}%</div>
+        </div>
+        <div class="exposed">
+          <div class="label">EXPOSED FIELDS</div>
+          <div class="chip-grid">${chips}</div>
+        </div>
+        <div class="preview">
+          <div class="label">RECORD PREVIEW (MASKED)</div>
+          ${rows}
+          <div class="preview-note">${r.note}</div>
+        </div>
+        <div class="rail-actions">
+          <div class="btn info">EXPORT RECORD</div>
+          <div class="btn danger">FLAG REVIEWED</div>
+        </div>
+      </div>
+    `;
+  }
+
+  document.querySelectorAll('.tool.clickable').forEach(el=>{
+    el.addEventListener('click', ()=> renderRail(el.dataset.tool));
+  });
+
+  // latency jitter
+  setInterval(()=>{
+    document.getElementById('latency').textContent = (9 + Math.floor(Math.random()*10)) + 'ms';
+  }, 1400);
+
+  // audio toggle
+  const audioBadge = document.getElementById('audioBadge');
+  audioBadge.addEventListener('click', ()=>{
+    const on = audioBadge.classList.toggle('on');
+    audioBadge.textContent = 'AUDIO: ' + (on ? 'ON' : 'OFF');
+  });
+</script>
+
+</body>
+</html>

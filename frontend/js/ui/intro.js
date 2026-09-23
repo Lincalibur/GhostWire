@@ -1,187 +1,111 @@
 /**
- * GhostWire intro gate — locked Data Nexus screen.
+ * GhostWire intro gate — uplink boot sequence.
  *
- * Based on Example/ghostwire_intro.html + Example/threshold_sequence.html,
- * polished per Example/themeUpdate.md:
- * HUD brackets + top bar, full-viewport ASCII streams into the center figure,
- * gothic doorway, humanized typewriter, and a Continue button that is the
- * *only* way past the gate. Accept triggers the threshold exit: figure fade →
- * doors open → perspective zoom → crimson flash → reveal app.
+ * Terminal boot log types out, cuts to a glitch flash, then the wordmark
+ * decrypts into view with cyan/yellow RGB-split ghost layers. Jack In is the
+ * *only* way past the gate; clicking it reuses the existing glitch-jitter →
+ * CRT-collapse exit straight into the app underneath.
  */
 
-const ASCII_CHARS = '0123456789ABCDEF<>[]//::--++==$$';
-const TYPE_TEXT =
-  'WARNING: IGNORANCE IS A SHIELD. KNOWLEDGE IS A BURDEN.\n\nDO YOU STILL WISH TO PROCEED?';
+const SCRAMBLE_CHARS = '!<>-_\\/[]{}—=+*^?#0123456789ABCDEF';
+const WORDMARK = 'GHOSTWIRE';
+
+const BOOT_LINES = [
+  { text: 'INITIATING UPLINK...', cls: '' },
+  { text: 'TRACE COUNTERMEASURES ACTIVE', cls: 'warn' },
+  { text: 'ROUTING THROUGH PROXY_07', cls: 'dim' },
+  { text: 'DECRYPTING RECON PACKET...', cls: '' },
+  { text: 'ACCESS GRANTED', cls: 'ok' },
+];
 
 /**
- * Full-viewport ASCII particles that spawn off-screen and stream toward the
- * central figure. Replaces the localized CSS-dot streams from the prototype.
- */
-class AsciiStreamField {
-  /** @param {HTMLCanvasElement} canvas */
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
-    this.particles = [];
-    this._running = true;
-    this._onResize = () => this._resize();
-    window.addEventListener('resize', this._onResize);
-    this._resize();
-    const count = Math.min(90, Math.max(48, Math.floor((this.w * this.h) / 18000)));
-    for (let i = 0; i < count; i++) {
-      this.particles.push(this._spawn());
-    }
-    this._raf = requestAnimationFrame(() => this._loop());
-  }
-
-  _resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-    this.w = window.innerWidth;
-    this.h = window.innerHeight;
-    this.canvas.width = Math.round(this.w * dpr);
-    this.canvas.height = Math.round(this.h * dpr);
-    this.canvas.style.width = `${this.w}px`;
-    this.canvas.style.height = `${this.h}px`;
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.tx = this.w / 2;
-    this.ty = this.h * 0.38;
-  }
-
-  _spawn() {
-    const edge = (Math.random() * 4) | 0;
-    let x;
-    let y;
-    if (edge === 0) {
-      x = Math.random() * this.w;
-      y = -24;
-    } else if (edge === 1) {
-      x = this.w + 24;
-      y = Math.random() * this.h;
-    } else if (edge === 2) {
-      x = Math.random() * this.w;
-      y = this.h + 24;
-    } else {
-      x = -24;
-      y = Math.random() * this.h;
-    }
-    return {
-      x,
-      y,
-      speed: 1.4 + Math.random() * 2.6,
-      char: ASCII_CHARS[(Math.random() * ASCII_CHARS.length) | 0],
-      opacity: 0.22 + Math.random() * 0.7,
-      size: 10 + ((Math.random() * 7) | 0),
-    };
-  }
-
-  _loop() {
-    if (!this._running) return;
-    this._raf = requestAnimationFrame(() => this._loop());
-    const ctx = this.ctx;
-    ctx.fillStyle = 'rgba(10, 10, 10, 0.28)';
-    ctx.fillRect(0, 0, this.w, this.h);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    for (const p of this.particles) {
-      const dx = this.tx - p.x;
-      const dy = this.ty - p.y;
-      const dist = Math.hypot(dx, dy) || 1;
-      if (dist < 22) {
-        Object.assign(p, this._spawn());
-        continue;
-      }
-      p.x += (dx / dist) * p.speed;
-      p.y += (dy / dist) * p.speed;
-      if (Math.random() < 0.05) {
-        p.char = ASCII_CHARS[(Math.random() * ASCII_CHARS.length) | 0];
-      }
-      ctx.globalAlpha = p.opacity;
-      ctx.fillStyle = '#d01212';
-      ctx.font = `bold ${p.size}px "JetBrains Mono", monospace`;
-      ctx.fillText(p.char, p.x, p.y);
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  stop() {
-    this._running = false;
-    cancelAnimationFrame(this._raf);
-    window.removeEventListener('resize', this._onResize);
-  }
-}
-
-/**
- * Humanized typewriter — variable delays, punctuation pauses, occasional hesitations.
- * @param {HTMLElement} el
- * @param {string} text
- * @param {boolean} reduced
+ * Type a single boot line into `host`, character by character.
+ * @param {HTMLElement} host
+ * @param {{text: string, cls: string}} line
  * @returns {Promise<void>}
  */
-function typeWithHumanRhythm(el, text, reduced) {
+function typeBootLine(host, line) {
   return new Promise((resolve) => {
-    if (reduced) {
-      el.textContent = text;
-      resolve();
-      return;
-    }
-    let index = 0;
+    const row = document.createElement('div');
+    if (line.cls) row.className = line.cls;
+    host.appendChild(row);
+    let i = 0;
     const step = () => {
-      if (index >= text.length) {
+      row.textContent = line.text.slice(0, i);
+      i++;
+      if (i > line.text.length) {
         resolve();
         return;
       }
-      const ch = text[index++];
-      el.textContent += ch;
-      let delay = 14 + ((Math.random() * 22) | 0);
-      if (['.', ':', '?', '!'].includes(ch)) delay += 90 + ((Math.random() * 120) | 0);
-      else if (ch === ' ' || ch === '\n') delay += 8 + ((Math.random() * 24) | 0);
-      else if (Math.random() < 0.05) delay += 60 + ((Math.random() * 90) | 0);
-      setTimeout(step, delay);
+      setTimeout(step, 16);
     };
     step();
   });
 }
 
 /**
- * Build faint scrolling hex/binary columns for ambient background texture.
+ * Run the boot log line-by-line, resolving once every line has typed out.
  * @param {HTMLElement} host
+ * @returns {Promise<void>}
  */
-function buildHexMatrix(host) {
-  const cols = Math.max(12, Math.floor(window.innerWidth / 72));
-  const glyphs = '0123456789ABCDEF';
+async function runBootLog(host) {
   host.innerHTML = '';
-  for (let c = 0; c < cols; c++) {
-    const col = document.createElement('div');
-    col.className = 'hex-col';
-    col.style.animationDuration = `${18 + (c % 7) * 3}s`;
-    col.style.animationDelay = `${-((c * 1.7) % 12)}s`;
-    let s = '';
-    for (let i = 0; i < 48; i++) {
-      s += glyphs[(Math.random() * glyphs.length) | 0];
-      if (i % 2 === 1) s += Math.random() < 0.35 ? ' ' : '\n';
-      else s += Math.random() < 0.5 ? '0' : '1';
-      s += '\n';
-    }
-    col.textContent = s;
-    host.appendChild(col);
+  for (const line of BOOT_LINES) {
+    await typeBootLine(host, line);
+    await new Promise((r) => setTimeout(r, 120));
   }
+  await new Promise((r) => setTimeout(r, 300));
 }
 
 /**
- * Play the locked intro gate. Resolves only after the operator clicks Continue.
+ * Scramble-decode `el`'s text into `target`, revealing left-to-right.
+ * @param {HTMLElement} el
+ * @param {string} target
+ * @param {number} [duration]
+ * @returns {Promise<void>}
+ */
+function scrambleReveal(el, target, duration = 650) {
+  return new Promise((resolve) => {
+    const start = performance.now();
+    const frame = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const revealCount = Math.floor(progress * target.length);
+      let out = '';
+      for (let i = 0; i < target.length; i++) {
+        out += i < revealCount ? target[i] : SCRAMBLE_CHARS[(Math.random() * SCRAMBLE_CHARS.length) | 0];
+      }
+      el.textContent = out;
+      if (progress < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        el.textContent = target;
+        resolve();
+      }
+    };
+    requestAnimationFrame(frame);
+  });
+}
+
+/**
+ * Play the locked intro gate. Resolves only after the operator clicks Jack In.
  * @param {() => void} [onComplete]
  * @returns {Promise<void>}
  */
 export function playIntro(onComplete) {
   return new Promise((resolve) => {
     const overlay = document.getElementById('intro-overlay');
-    const canvas = document.getElementById('ascii-stream-canvas');
-    const output = document.getElementById('cli-type-output');
+    const terminalEl = document.getElementById('intro-terminal');
+    const wordmark = document.getElementById('intro-wordmark');
+    const baseLayer = wordmark?.querySelector('.wm-base');
+    const cyanLayer = wordmark?.querySelector('.wm-cyan');
+    const yellowLayer = wordmark?.querySelector('.wm-yellow');
+    const subline = document.getElementById('intro-subline');
+    const corners = document.querySelectorAll('.intro-corner');
+    const cta = document.getElementById('intro-cta');
     const proceedBtn = document.getElementById('proceedBtn');
-    const hexHost = document.getElementById('hex-matrix');
+    const flash = document.getElementById('intro-flash');
 
-    if (!overlay || !canvas || !output || !proceedBtn) {
+    if (!overlay || !terminalEl || !wordmark || !baseLayer || !proceedBtn) {
       onComplete?.();
       resolve();
       return;
@@ -191,38 +115,75 @@ export function playIntro(onComplete) {
       window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     document.body.classList.add('intro-locked');
-    overlay.classList.remove('gate-dismissed', 'gate-removed', 'hidden');
-    proceedBtn.classList.remove('visible');
+    overlay.classList.remove('gate-dismissed', 'gate-removed');
     proceedBtn.disabled = true;
-    output.textContent = '';
+    terminalEl.innerHTML = '';
+    terminalEl.classList.remove('visible');
+    baseLayer.textContent = '';
+    if (cyanLayer) cyanLayer.textContent = '';
+    if (yellowLayer) yellowLayer.textContent = '';
+    wordmark.classList.remove('revealed', 'settled', 'flicker');
+    subline?.classList.remove('visible');
+    cta?.classList.remove('visible');
+    corners.forEach((c) => c.classList.remove('visible'));
 
-    if (hexHost) buildHexMatrix(hexHost);
+    let flickerTimer = null;
+    const startAmbientFlicker = () => {
+      flickerTimer = setInterval(() => {
+        if (Math.random() > 0.94) {
+          wordmark.classList.add('flicker');
+          setTimeout(() => wordmark.classList.remove('flicker'), 60);
+        }
+      }, 400);
+    };
 
-    const stream = reduced ? null : new AsciiStreamField(canvas);
+    const revealSequence = async () => {
+      terminalEl.classList.add('visible');
+      await runBootLog(terminalEl);
+
+      // Glitch cut: brief flash, terminal log drops away.
+      flash?.classList.add('burst');
+      setTimeout(() => flash?.classList.remove('burst'), 90);
+      terminalEl.classList.remove('visible');
+
+      wordmark.classList.add('revealed');
+      await scrambleReveal(baseLayer, WORDMARK);
+      if (cyanLayer) cyanLayer.textContent = WORDMARK;
+      if (yellowLayer) yellowLayer.textContent = WORDMARK;
+      wordmark.classList.add('settled');
+
+      subline?.classList.add('visible');
+      corners.forEach((c, i) => setTimeout(() => c.classList.add('visible'), i * 80));
+
+      proceedBtn.disabled = false;
+      cta?.classList.add('visible');
+      proceedBtn.focus({ preventScroll: true });
+      startAmbientFlicker();
+    };
+
     if (reduced) {
-      const ctx = canvas.getContext('2d');
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      ctx.fillStyle = '#0a0a0a';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      baseLayer.textContent = WORDMARK;
+      if (cyanLayer) cyanLayer.textContent = WORDMARK;
+      if (yellowLayer) yellowLayer.textContent = WORDMARK;
+      wordmark.classList.add('revealed', 'settled');
+      subline?.classList.add('visible');
+      corners.forEach((c) => c.classList.add('visible'));
+      proceedBtn.disabled = false;
+      cta?.classList.add('visible');
+    } else {
+      revealSequence();
     }
 
     let done = false;
-    const statusEl = document.getElementById('intro-status');
-    const uiPanel = document.getElementById('intro-ui-panel');
-
     const finish = () => {
       if (done) return;
       done = true;
       proceedBtn.disabled = true;
       proceedBtn.style.pointerEvents = 'none';
-      const label = proceedBtn.querySelector('.btn-glitch-text');
-      if (label) label.textContent = '[ ACCESS GRANTED ]';
-      proceedBtn.classList.add('granted');
-      if (statusEl) statusEl.textContent = 'AUTHORIZED';
+      proceedBtn.textContent = 'ACCESS GRANTED';
+      if (flickerTimer) clearInterval(flickerTimer);
 
       const tearDown = () => {
-        stream?.stop();
         overlay.classList.add('gate-removed');
         overlay.remove();
         document.body.classList.remove('intro-locked');
@@ -239,17 +200,10 @@ export function playIntro(onComplete) {
 
       // Hard glitch-cut: brief RGB-split/static jitter, then a CRT
       // power-off collapse straight to the app underneath.
-      uiPanel?.classList.add('threshold-hidden');
       overlay.classList.add('glitching');
       setTimeout(() => overlay.classList.add('crt-off'), 350);
       setTimeout(tearDown, 750);
     };
-
-    typeWithHumanRhythm(output, TYPE_TEXT, reduced).then(() => {
-      proceedBtn.classList.add('visible');
-      proceedBtn.disabled = false;
-      proceedBtn.focus({ preventScroll: true });
-    });
 
     proceedBtn.addEventListener('click', finish, { once: true });
   });

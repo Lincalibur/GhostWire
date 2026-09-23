@@ -3,7 +3,7 @@ import { getConnector } from '../connectors/index.js';
 import { queryLogRepository } from '../db/repositories.js';
 import { logger } from '../utils/logger.js';
 
-const MAX_QUERY_LENGTH = 255;
+const MAX_QUERY_LENGTH = 1000;
 
 /**
  * v0id's query payload may carry a raw password (JSON `{ email, password }`).

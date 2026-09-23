@@ -11,19 +11,23 @@ import { visualsFor } from './toolVisuals.js';
 const FIELD_MODULE_MAP = [
   { fieldId: 'intake-username', moduleId: 'grimnir' },
   { fieldId: 'intake-domain', moduleId: 'mspect' },
+  { fieldId: 'intake-company', moduleId: 'dossier' },
   { fieldId: 'intake-org', moduleId: 'wiretap' },
   { fieldId: 'intake-shodan', moduleId: 'shodan' },
 ];
 
 /** Every intake field id, for Enter-key wiring. */
+const PERSON_FIELDS = ['name', 'email', 'username', 'phone', 'company', 'domain', 'location'];
+
 const ALL_INTAKE_FIELD_IDS = [
   'intake-email',
   'intake-password',
+  ...PERSON_FIELDS.map((f) => `intake-person-${f}`),
   ...FIELD_MODULE_MAP.map((f) => f.fieldId),
 ];
 
 /** RECON_ARSENAL status cards, one row, in display order. */
-const CARD_ORDER = ['mspect', 'v0id', 'grimnir', 'wiretap', 'shodan'];
+const CARD_ORDER = ['dossier', 'profiler', 'mspect', 'v0id', 'grimnir', 'wiretap', 'shodan'];
 
 let modules = [];
 let loader = null;
@@ -108,6 +112,17 @@ function buildJobs() {
       moduleId: 'v0id',
       query: JSON.stringify({ email, password }),
       label: labelParts.join(' + '),
+    });
+  }
+
+  const person = Object.fromEntries(
+    PERSON_FIELDS.map((f) => [f, document.getElementById(`intake-person-${f}`)?.value.trim() || '']),
+  );
+  if (Object.values(person).some(Boolean)) {
+    jobs.unshift({
+      moduleId: 'profiler',
+      query: JSON.stringify(person),
+      label: person.name || person.email || person.username || person.phone || person.company,
     });
   }
 

@@ -6,71 +6,33 @@
   <title>GHOSTWIRE // OPERATOR PORTAL</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=UnifrakturMaguntia&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <!-- Locked Data Nexus gate — Continue is the only exit -->
+  <!-- GhostWire uplink gate — Jack In is the only exit -->
   <div id="intro-overlay" class="intro-gate" role="dialog" aria-modal="true" aria-label="GhostWire gatekeeper">
-    <canvas id="ascii-stream-canvas" aria-hidden="true"></canvas>
-    <div id="hex-matrix" class="hex-matrix" aria-hidden="true"></div>
-    <div class="scanline-overlay" aria-hidden="true"></div>
-    <div class="grid-background" aria-hidden="true"></div>
+    <div class="intro-corner tl" aria-hidden="true"></div>
+    <div class="intro-corner tr" aria-hidden="true"></div>
+    <div class="intro-corner bl" aria-hidden="true"></div>
+    <div class="intro-corner br" aria-hidden="true"></div>
 
-    <div class="hud-top-bar">
-      <div class="hud-block">GHOSTWIRE // SYS_NODE</div>
-      <div class="hud-block">STATUS: <span class="hud-warn" id="intro-status">PENDING</span></div>
-      <div class="hud-block red-text">AUTH: REQUIRED</div>
+    <div id="intro-terminal" class="intro-terminal" aria-hidden="true"></div>
+
+    <div class="intro-wordmark-wrap">
+      <h1 id="intro-wordmark" class="intro-wordmark">
+        <span class="wm-base"></span>
+        <span class="wm-layer wm-cyan" aria-hidden="true"></span>
+        <span class="wm-layer wm-yellow" aria-hidden="true"></span>
+      </h1>
+      <div id="intro-subline" class="intro-subline">SIGNAL ACQUIRED <span class="accent">// ENTER AT OWN RISK</span></div>
     </div>
 
-    <div class="corner-bracket top-left" aria-hidden="true">┌</div>
-    <div class="corner-bracket top-right" aria-hidden="true">┐</div>
-    <div class="corner-bracket bottom-left" aria-hidden="true">└</div>
-    <div class="corner-bracket bottom-right" aria-hidden="true">┘</div>
-
-    <div class="gate-panel panel-left" aria-hidden="true"></div>
-    <div class="gate-panel panel-right" aria-hidden="true"></div>
-
-    <div id="perspective-wrap" aria-hidden="true">
-      <div id="intro-scene">
-        <div class="intro-core">
-          <div id="door-wrap">
-            <div id="door-frame" aria-hidden="true"></div>
-            <div id="door-light" aria-hidden="true"></div>
-            <div class="door-panel left" aria-hidden="true"></div>
-            <div class="door-panel right" aria-hidden="true"></div>
-
-            <div class="nexus-wrapper" id="nexus-wrap">
-              <div class="crosshair" aria-hidden="true">
-                <span class="ch-h"></span>
-                <span class="ch-v"></span>
-                <span class="ch-ring"></span>
-                <span class="ch-ring outer"></span>
-              </div>
-              <div class="core-glow" aria-hidden="true"></div>
-              <img
-                id="nexusImg"
-                class="nexus-figure"
-                src="assets/divine-apparition.png"
-                alt="Divine Apparition — GhostWire nexus"
-                draggable="false"
-              />
-            </div>
-          </div>
-
-          <div class="terminal-prompt-box" id="intro-ui-panel">
-            <div class="terminal-header">[ GATEKEEPER_PROTOCOL ]</div>
-            <div class="cli-line">
-              <pre id="cli-type-output" class="cli-text"></pre><span class="cli-cursor" aria-hidden="true">█</span>
-            </div>
-            <button class="terminal-btn intro-proceed" id="proceedBtn" type="button" disabled>
-              <span class="btn-glitch-text" data-text="[ ACCEPT & PROCEED ]">[ ACCEPT &amp; PROCEED ]</span>
-              <span class="btn-subtext">// SINGLE CLICK AUTHORIZATION</span>
-            </button>
-          </div>
-        </div>
-      </div>
+    <div id="intro-cta" class="intro-cta">
+      <button class="terminal-btn" id="proceedBtn" type="button" disabled>Jack In</button>
     </div>
+
+    <div id="intro-flash" class="intro-flash" aria-hidden="true"></div>
   </div>
 
   <!-- Ambient audio toggle -->
@@ -80,10 +42,26 @@
     <!-- ── Page 2: target intake ─────────────────────────── -->
     <section id="input-view">
       <div class="input-flank left" aria-hidden="true">
-        <img src="assets/input-guardian.png" alt="" class="input-guardian-img" />
+        <div class="hud-flank panel-window">
+          <div class="window-header">SIGNAL_MONITOR</div>
+          <div class="window-body">
+            <div class="stat-line">LAT: <span class="accent">40.71 N</span></div>
+            <div class="stat-line">LNG: <span class="accent">74.00 W</span></div>
+            <div class="stat-line">SIG: <span class="accent flicker-tag">STRONG</span></div>
+            <div class="hud-bars">▆▇▅▃▆█▄▂▆▇▃▅▇▄▂▆▇▅▃▆</div>
+            <div class="hud-hex">0xF3 0xA2 0x1C 0x9B 0x7E 0x44</div>
+            <div class="stat-line">UPLINK: <span class="ok flicker-tag">STABLE</span></div>
+          </div>
+        </div>
       </div>
 
       <div class="input-form-col">
+      <div class="globe-wrap" aria-hidden="true">
+        <div class="globe-canvas-frame">
+          <canvas id="globe-canvas" class="globe-canvas" width="200" height="200"></canvas>
+        </div>
+        <div class="globe-label">GLOBAL_SIGNAL_SWEEP</div>
+      </div>
       <div class="panel-window p-intake">
         <div class="window-header">RECON_ARSENAL // TARGET INTAKE</div>
         <div class="window-body intake-wrap">
@@ -139,6 +117,40 @@
             </div>
 
             <div class="form-group intake-field">
+              <label class="form-label" for="intake-company">
+                COMPANY
+                <span class="intake-caveat">(Dossier — emails, phones, addresses, socials, legal info and employee email pattern from public APIs; name or domain)</span>
+              </label>
+              <div class="terminal-input-wrapper bordered">
+                <span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-company" class="terminal-input" placeholder="e.g., Takealot or takealot.com" autocomplete="off" />
+              </div>
+              <span class="intake-status" id="intake-status-dossier">IDLE</span>
+            </div>
+
+            <div class="form-group intake-field">
+              <label class="form-label">
+                PERSON OF INTEREST
+                <span class="intake-caveat">(Profiler — enter whatever you know; every field is used to pivot to more public details)</span>
+              </label>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-name" class="terminal-input" placeholder="full name" autocomplete="off" /></div>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-email" class="terminal-input" placeholder="email" autocomplete="off" /></div>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-username" class="terminal-input" placeholder="username / handle" autocomplete="off" /></div>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-phone" class="terminal-input" placeholder="phone (+27...)" autocomplete="off" /></div>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-company" class="terminal-input" placeholder="company" autocomplete="off" /></div>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-domain" class="terminal-input" placeholder="company domain (for work-email guesses)" autocomplete="off" /></div>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-location" class="terminal-input" placeholder="city / country" autocomplete="off" /></div>
+              <span class="intake-status" id="intake-status-profiler">IDLE</span>
+            </div>
+
+            <div class="form-group intake-field">
               <label class="form-label" for="intake-shodan">
                 IP OR DOMAIN
                 <span class="intake-caveat">(free Shodan InternetDB lookup — open ports / known CVEs, no key required)</span>
@@ -172,7 +184,17 @@
       </div>
 
       <div class="input-flank right" aria-hidden="true">
-        <img src="assets/input-guardian.png" alt="" class="input-guardian-img" />
+        <div class="hud-flank panel-window">
+          <div class="window-header">NODE_STATUS</div>
+          <div class="window-body">
+            <div class="stat-line">NODE: <span class="accent">GW-991823</span></div>
+            <div class="stat-line">TRACE: <span class="accent flicker-tag">NONE</span></div>
+            <div class="stat-line">ENCRYPT: <span class="accent">AES-256</span></div>
+            <div class="hud-bars">▃▆█▄▂▆▇▅▃▆▇▅▃▆█▄▂▆▇▃</div>
+            <div class="hud-hex">0x1D 0x88 0xC0 0x2A 0xEF 0x33</div>
+            <div class="stat-line">UPLINK: <span class="ok flicker-tag">STABLE</span></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -185,12 +207,7 @@
           <div class="stat-line">NODE: GW-991823</div>
           <div class="stat-line">LATENCY: 12ms</div>
           <div class="stat-line">BANDWIDTH: 1.2 GB/s</div>
-        </div>
-      </div>
-
-      <div class="panel-window p-feed-status">
-        <div class="window-body center">
-          FEED: <span class="accent glow">SECURE</span>
+          <div class="stat-line">FEED: <span class="accent glow">SECURE</span></div>
         </div>
       </div>
 

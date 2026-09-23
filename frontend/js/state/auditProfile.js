@@ -18,6 +18,8 @@ function emptyProfile() {
     grimnir: null,
     wiretap: null,
     shodan: null,
+    dossier: null,
+    profiler: null,
     metadata: [],
   };
 }
