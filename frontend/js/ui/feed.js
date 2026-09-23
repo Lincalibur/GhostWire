@@ -1,3 +1,10 @@
+import { escapeHtml } from '../utils/dom.js';
+
+/** Turn URLs in an already-escaped line into safe, clickable links. */
+function linkify(text) {
+  return escapeHtml(text).replace(/https?:\/\/[^\s<]+/g, (u) => `<a class="report-link" href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`);
+}
+
 /**
  * Type a single line into `el` character by character, auto-scrolling `feed`
  * as it grows.
@@ -13,6 +20,7 @@ function typeFeedLine(el, text, feed) {
     feed.scrollTop = feed.scrollHeight;
     i++;
     if (i <= text.length) setTimeout(step, 10);
+    else if (text.includes('http')) el.innerHTML = linkify(text);
   };
   step();
 }
@@ -42,7 +50,10 @@ export function writeFeed(lines) {
     else if (line.startsWith('[!]') || line.startsWith('SYSTEM:')) div.classList.add('system');
 
     feed.appendChild(div);
-    if (reduced) div.textContent = line;
+    if (reduced) {
+      div.textContent = line;
+      if (line.includes('http')) div.innerHTML = linkify(line);
+    }
     else typeFeedLine(div, line, feed);
   }
   feed.scrollTop = feed.scrollHeight;

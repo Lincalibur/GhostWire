@@ -117,6 +117,40 @@
             </div>
 
             <div class="form-group intake-field">
+              <label class="form-label" for="intake-company">
+                COMPANY
+                <span class="intake-caveat">(Dossier — emails, phones, addresses, socials, legal info and employee email pattern from public APIs; name or domain)</span>
+              </label>
+              <div class="terminal-input-wrapper bordered">
+                <span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-company" class="terminal-input" placeholder="e.g., Takealot or takealot.com" autocomplete="off" />
+              </div>
+              <span class="intake-status" id="intake-status-dossier">IDLE</span>
+            </div>
+
+            <div class="form-group intake-field">
+              <label class="form-label">
+                PERSON OF INTEREST
+                <span class="intake-caveat">(Profiler — enter whatever you know; every field is used to pivot to more public details)</span>
+              </label>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-name" class="terminal-input" placeholder="full name" autocomplete="off" /></div>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-email" class="terminal-input" placeholder="email" autocomplete="off" /></div>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-username" class="terminal-input" placeholder="username / handle" autocomplete="off" /></div>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-phone" class="terminal-input" placeholder="phone (+27...)" autocomplete="off" /></div>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-company" class="terminal-input" placeholder="company" autocomplete="off" /></div>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-domain" class="terminal-input" placeholder="company domain (for work-email guesses)" autocomplete="off" /></div>
+              <div class="terminal-input-wrapper bordered"><span class="terminal-input-prefix">&gt;</span>
+                <input type="text" id="intake-person-location" class="terminal-input" placeholder="city / country" autocomplete="off" /></div>
+              <span class="intake-status" id="intake-status-profiler">IDLE</span>
+            </div>
+
+            <div class="form-group intake-field">
               <label class="form-label" for="intake-shodan">
                 IP OR DOMAIN
                 <span class="intake-caveat">(free Shodan InternetDB lookup — open ports / known CVEs, no key required)</span>

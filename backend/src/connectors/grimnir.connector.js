@@ -34,9 +34,9 @@ async function probe(site, handle) {
     const res = await fetchWithTimeout(url, { method: 'GET', timeoutMs: PROBE_TIMEOUT_MS });
     const body = site.e_string ? await res.text() : '';
     const found = res.status === site.e_code && (!site.e_string || body.includes(site.e_string));
-    return { platform: site.name, found, status: res.status };
+    return { platform: site.name, found, status: res.status, url };
   } catch {
-    return { platform: site.name, found: false, status: null };
+    return { platform: site.name, found: false, status: null, url };
   }
 }
 
@@ -67,7 +67,7 @@ export const grimnirConnector = {
 
     const hits = results.filter((r) => r.found);
     for (const r of hits) {
-      lines.push(`  -> [FOUND]  ${r.platform}`);
+      lines.push(`  -> [FOUND]  ${r.platform} — ${r.url}`);
     }
     lines.push(`  -> Trace complete. ${hits.length}/${results.length} surface(s) matched.`);
 

@@ -76,6 +76,8 @@ export const config = Object.freeze({
   connectors: {
     shodanApiKey: env('SHODAN_API_KEY'),
     grayhatWarfareApiKey: env('GRAYHATWARFARE_API_KEY'),
+    hunterApiKey: env('HUNTER_API_KEY'),
+    githubToken: env('GITHUB_TOKEN'),
   },
 
   paths: {

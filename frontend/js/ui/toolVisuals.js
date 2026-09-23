@@ -5,6 +5,22 @@
  * Assets live in /assets/tools/ (sourced from Example/).
  */
 export const TOOL_VISUALS = {
+  dossier: {
+    toolId: 'TOOL_06',
+    bgText: 'DOSSIER',
+    title: 'Company Dossier',
+    desc: 'Emails, phones, addresses, socials and legal info from public registries.',
+    image: 'assets/tools/tool1.png',
+    alt: 'Company intelligence dossier',
+  },
+  profiler: {
+    toolId: 'TOOL_07',
+    bgText: 'PROFILE',
+    title: 'Person Profiler',
+    desc: 'Enrich a person from known details: accounts, emails, socials, leads.',
+    image: 'assets/tools/tool3.png',
+    alt: 'Person enrichment profiler',
+  },
   mspect: {
     toolId: 'TOOL_01',
     bgText: 'RECON',

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WRAITH // OSINT CONSOLE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #06090b;
+    --bg-panel: #0a0f13;
+    --bg-panel-alt: #0d1418;
+    --bg-input: #060a0c;
+    --border: #162a30;
+    --border-bright: #2c5561;
+    --cyan: #4fd8e8;
+    --cyan-dim: #2f6873;
+    --amber: #ffab5e;
+    --amber-dim: #8a5a2e;
+    --magenta: #ff5da2;
+    --yellow: #e8d44f;
+    --text: #b9d4da;
+    --text-dim: #4d6870;
+    --text-faint: #2e454c;
+    --mono-head: 'Share Tech Mono', monospace;
+    --mono-body: 'JetBrains Mono', monospace;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:var(--mono-body);
+    min-height:100vh;
+  }
+
+  /* ---------- atmosphere layers ---------- */
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:50;
+    opacity:.045; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  .scanlines{
+    position:fixed; inset:0; pointer-events:none; z-index:51;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,.22) 3px);
+    opacity:.35;
+  }
+  .vignette{
+    position:fixed; inset:0; pointer-events:none; z-index:49;
+    background:radial-gradient(ellipse at 50% 30%, transparent 40%, rgba(0,0,0,.65) 100%);
+  }
+
+  .app{
+    position:relative; z-index:1;
+    max-width:1500px; margin:0 auto; padding:28px 32px 80px;
+  }
+
+  /* ---------- top strip ---------- */
+  .topstrip{
+    display:flex; justify-content:space-between; align-items:baseline;
+    border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:22px;
+    font-family:var(--mono-head); letter-spacing:.12em; font-size:12px; color:var(--text-dim);
+  }
+  .topstrip .brand{ color:var(--cyan); font-size:15px; letter-spacing:.22em; }
+  .topstrip .brand span{ color:var(--yellow); }
+  .topstrip .clock{ color:var(--text-dim); }
+  .topstrip .clock b{ color:var(--amber); font-weight:400; }
+
+  /* ---------- panel chrome ---------- */
+  .panel{
+    background:linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel-alt) 100%);
+    border:1px solid var(--border);
+    position:relative;
+  }
+  .panel::before{
+    content:""; position:absolute; top:0; left:0; width:100%; height:2px;
+    background:linear-gradient(90deg, var(--cyan-dim), transparent 60%);
+  }
+  .panel-head{
+    display:flex; align-items:center; gap:8px;
+    font-family:var(--mono-head); font-size:13px; letter-spacing:.14em;
+    color:var(--cyan); padding:12px 16px; border-bottom:1px solid var(--border);
+    cursor:default;
+  }
+  .panel-head .sq{ width:7px; height:7px; background:var(--yellow); box-shadow:0 0 6px var(--yellow); flex:none; }
+  .panel-head:hover{ text-shadow: -1px 0 var(--magenta), 1px 0 var(--cyan); }
+
+  /* ---------- top grid: monitor / globe / status ---------- */
+  .grid{
+    display:grid; grid-template-columns: 1fr 1.15fr 1fr;
+    gap:18px; margin-bottom:20px; align-items:stretch;
+  }
+  @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+
+  .kv{ padding:14px 16px 6px; font-size:13px; }
+  .kv .row{ display:flex; justify-content:space-between; padding:4px 0; }
+  .kv .label{ color:var(--text-dim); letter-spacing:.06em; }
+  .kv .val{ color:var(--text); }
+  .kv .val.strong{ color:var(--cyan); }
+  .kv .val.warn{ color:var(--amber); }
+
+  .flicker{ animation: flicker 6s infinite; }
+  @keyframes flicker{
+    0%,92%,100%{ opacity:1; }
+    93%{ opacity:.4; }
+    94%{ opacity:1; }
+    95%{ opacity:.3; }
+    96%{ opacity:1; }
+  }
+
+  .wave{ display:flex; align-items:flex-end; gap:2px; height:34px; padding:10px 16px 4px; }
+  .wave i{ flex:1; background:linear-gradient(180deg, var(--cyan), var(--cyan-dim)); opacity:.75; border-radius:1px 1px 0 0; transition:height .25s ease; }
+
+  .hexrow{ padding:2px 16px 12px; font-size:12px; color:var(--text-faint); letter-spacing:.08em; }
+
+  /* ---------- globe column ---------- */
+  .globe-col{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:10px 0; }
+  .globe-wrap{ position:relative; width:230px; height:230px; }
+  .globe-wrap svg{ width:100%; height:100%; overflow:visible; }
+  .globe-ring{ animation: rotate 26s linear infinite; transform-origin:115px 115px; }
+  .globe-ring.slow{ animation-duration:40s; animation-direction:reverse; }
+  @keyframes rotate{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
+
+  .ping{ transform-origin:center; animation: ping 2.4s ease-out infinite; }
+  @keyframes ping{
+    0%{ r:2; opacity:1; }
+    80%{ r:26; opacity:0; }
+    100%{ r:26; opacity:0; }
+  }
+  .target-dot{ fill:var(--amber); filter:drop-shadow(0 0 4px var(--amber)); }
+
+  .globe-caption{ font-family:var(--mono-head); font-size:12px; letter-spacing:.22em; color:var(--text-dim); }
+  .globe-coord{ font-size:11px; color:var(--cyan-dim); letter-spacing:.1em; }
+
+  /* ---------- recon arsenal ---------- */
+  .recon{ margin-bottom:20px; }
+  .field{ padding:16px 20px; border-top:1px solid var(--border); }
+  .field:first-of-type{ border-top:none; }
+  .field-label-row{ display:flex; align-items:baseline; gap:10px; margin-bottom:4px; }
+  .field-label{ font-size:12px; letter-spacing:.1em; color:var(--amber); font-weight:700; }
+  .field-tag{
+    font-size:9px; letter-spacing:.08em; padding:1px 6px; border:1px solid var(--border-bright);
+    color:var(--text-dim); text-transform:uppercase;
+  }
+  .field-tag.risk{ color:var(--amber); border-color:var(--amber-dim); }
+  .field-tag.safe{ color:var(--cyan); border-color:var(--cyan-dim); }
+  .field-note{ font-size:11px; color:var(--text-faint); margin-bottom:8px; line-height:1.5; }
+
+  .input-row{ display:flex; align-items:center; gap:10px; }
+  .input-row input{
+    flex:1; background:var(--bg-input); border:1px solid var(--border);
+    color:var(--text); font-family:var(--mono-body); font-size:13px; padding:9px 12px;
+    outline:none; transition:border-color .2s, box-shadow .2s;
+  }
+  .input-row input::placeholder{ color:var(--text-faint); }
+  .input-row input:focus{ border-color:var(--cyan); box-shadow:0 0 0 1px var(--cyan-dim), 0 0 12px -2px var(--cyan-dim); }
+  .prompt{ color:var(--cyan-dim); font-size:13px; }
+
+  .status-line{ display:flex; align-items:center; gap:6px; margin-top:6px; font-size:11px; letter-spacing:.1em; color:var(--text-faint); }
+  .status-line .cursor{ display:inline-block; width:6px; height:12px; background:var(--cyan-dim); animation: blink 1s steps(1) infinite; }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  /* ---------- wraith drop zone ---------- */
+  .dropzone{
+    margin:18px 20px 20px; border:1px dashed var(--border-bright);
+    padding:26px; text-align:center; color:var(--text-dim);
+    font-size:12px; letter-spacing:.12em; cursor:pointer;
+    transition:border-color .2s, color .2s, background .2s;
+  }
+  .dropzone:hover{ border-color:var(--amber); color:var(--amber); background:rgba(255,171,94,.03); }
+
+  /* ---------- run scan button ---------- */
+  .run-scan{
+    width:100%; margin-top:4px; padding:16px; background:transparent;
+    border:1px solid var(--amber-dim); color:var(--amber);
+    font-family:var(--mono-head); letter-spacing:.3em; font-size:14px;
+    cursor:pointer; position:relative; overflow:hidden; transition:all .2s;
+  }
+  .run-scan:hover{ border-color:var(--amber); box-shadow:0 0 24px -4px var(--amber-dim); background:rgba(255,171,94,.05); }
+  .run-scan:active{ transform:translateY(1px); }
+  .run-scan.scanning{ color:var(--bg); background:var(--amber); border-color:var(--amber); }
+
+  .footer-note{
+    text-align:center; font-size:10px; letter-spacing:.15em; color:var(--text-faint);
+    margin-top:18px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="grain"></div>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+
+  <div class="app">
+
+    <div class="topstrip">
+      <div class="brand"><span>&#9632;</span> WRAITH_CONSOLE</div>
+      <div class="clock">SESSION: <b id="sessionId">0x7A21</b> &nbsp; UPTIME: <b id="uptime">00:00:00</b></div>
+    </div>
+
+    <div class="grid">
+      <!-- SIGNAL MONITOR -->
+      <div class="panel">
+        <div class="panel-head"><span class="sq"></span>SIGNAL_MONITOR</div>
+        <div class="kv">
+          <div class="row"><span class="label">LAT</span><span class="val strong">40.71 N</span></div>
+          <div class="row"><span class="label">LNG</span><span class="val strong">74.00 W</span></div>
+          <div class="row"><span class="label">SIG</span><span class="val warn">STRONG</span></div>
+        </div>
+        <div class="wave" id="waveLeft"></div>
+        <div class="hexrow">0xF3 0xA2 0x1C 0x9B 0x7E 0x44</div>
+        <div class="kv" style="padding-top:0;">
+          <div class="row"><span class="label">UPLINK</span><span class="val flicker" style="color:var(--cyan)">STABLE</span></div>
+        </div>
+      </div>
+
+      <!-- GLOBE -->
+      <div class="globe-col">
+        <div class="globe-wrap">
+          <svg viewBox="0 0 230 230">
+            <circle cx="115" cy="115" r="86" fill="none" stroke="var(--border-bright)" stroke-width="1"/>
+            <g class="globe-ring">
+              <ellipse cx="115" cy="115" rx="86" ry="30" fill="none" stroke="var(--cyan-dim)" stroke-width="1"/>
+              <ellipse cx="115" cy="115" rx="86" ry="58" fill="none" stroke="var(--cyan-dim)" stroke-width=".6"/>
+            </g>
+            <g class="globe-ring slow">
+              <ellipse cx="115" cy="115" rx="30" ry="86" fill="none" stroke="var(--cyan-dim)" stroke-width="1"/>
+              <ellipse cx="115" cy="115" rx="58" ry="86" fill="none" stroke="var(--cyan-dim)" stroke-width=".6"/>
+            </g>
+            <line x1="29" y1="115" x2="201" y2="115" stroke="var(--border-bright)" stroke-width=".6"/>
+            <line x1="115" y1="29" x2="115" y2="201" stroke="var(--border-bright)" stroke-width=".6"/>
+
+            <!-- plotted target -->
+            <circle cx="150" cy="88" r="2" class="target-dot"/>
+            <circle cx="150" cy="88" r="2" fill="none" stroke="var(--amber)" stroke-width="1" class="ping"/>
+          </svg>
+        </div>
+        <div class="globe-caption">GLOBAL_SIGNAL_SWEEP</div>
+        <div class="globe-coord" id="globeCoord">TARGET LOCKED :: 40.71N 74.00W</div>
+      </div>
+
+      <!-- NODE STATUS -->
+      <div class="panel">
+        <div class="panel-head"><span class="sq"></span>NODE_STATUS</div>
+        <div class="kv">
+          <div class="row"><span class="label">NODE</span><span class="val strong">GW-991823</span></div>
+          <div class="row"><span class="label">TRACE</span><span class="val">NONE</span></div>
+          <div class="row"><span class="label">ENCRYPT</span><span class="val warn">AES-256</span></div>
+        </div>
+        <div class="wave" id="waveRight"></div>
+        <div class="hexrow">0x1D 0x88 0xC0 0x2A 0xEF 0x33</div>
+        <div class="kv" style="padding-top:0;">
+          <div class="row"><span class="label">UPLINK</span><span class="val flicker" style="color:var(--cyan)">STABLE</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECON ARSENAL -->
+    <div class="panel recon">
+      <div class="panel-head"><span class="sq"></span>RECON_ARSENAL // TARGET INTAKE</div>
+
+      <div class="field">
+        <div class="field-label-row"><span class="field-label">EMAIL</span><span class="field-tag risk">upstream query</span></div>
+        <div class="field-note">breach-by-email lookup — sent to the upstream index</div>
+        <div class="input-row"><span class="prompt">&gt;</span><input placeholder="e.g., name@example.com"></div>
+        <div class="status-line" data-idle>IDLE<span class="cursor"></span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-label-row"><span class="field-label">PASSWORD</span><span class="field-tag safe">local check</span></div>
+        <div class="field-note">checked via k-anonymity range query — never sent in full</div>
+        <div class="input-row"><span class="prompt">&gt;</span><input type="password" placeholder="e.g., correcthorsebattery"></div>
+        <div class="status-line" data-idle>IDLE<span class="cursor"></span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-label-row"><span class="field-label">USERNAME</span><span class="field-tag risk">upstream query</span></div>
+        <div class="field-note">checked against 640+ platforms — a positive match means an account exists, not that it belongs to your target</div>
+        <div class="input-row"><span class="prompt">&gt;</span><input placeholder="e.g., net_phantom"></div>
+        <div class="status-line" data-idle>IDLE<span class="cursor"></span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-label-row"><span class="field-label">DOMAIN</span><span class="field-tag safe">public records</span></div>
+        <div class="input-row"><span class="prompt">&gt;</span><input placeholder="e.g., example.com"></div>
+        <div class="status-line" data-idle>IDLE<span class="cursor"></span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-label-row"><span class="field-label">ORG / KEYWORD</span><span class="field-tag safe">public records</span></div>
+        <div class="input-row"><span class="prompt">&gt;</span><input placeholder="e.g., acme"></div>
+        <div class="status-line" data-idle>IDLE<span class="cursor"></span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-label-row"><span class="field-label">IP OR DOMAIN</span><span class="field-tag safe">no key required</span></div>
+        <div class="field-note">free Shodan InternetDB lookup — open ports / known CVEs</div>
+        <div class="input-row"><span class="prompt">&gt;</span><input placeholder="e.g., 1.1.1.1 or example.com"></div>
+        <div class="status-line" data-idle>IDLE<span class="cursor"></span></div>
+      </div>
+    </div>
+
+    <!-- WRAITH METADATA -->
+    <div class="panel" style="margin-bottom:20px;">
+      <div class="panel-head"><span class="sq"></span>WRAITH // METADATA EXTRACTOR</div>
+      <div style="padding:16px 20px 0; font-size:12px; color:var(--amber); letter-spacing:.1em;">IMAGE FILE</div>
+      <div class="dropzone">[ DROP IMAGE OR CLICK TO SELECT ]</div>
+    </div>
+
+    <button class="run-scan" id="runScan">RUN FULL SCAN</button>
+    <div class="footer-note" id="scanStatus">ALL_SYSTEMS_NOMINAL</div>
+
+  </div>
+
+<script>
+  // live waveform bars
+  function buildWave(el, n){
+    for(let i=0;i<n;i++){ const b=document.createElement('i'); el.appendChild(b); }
+  }
+  function animateWave(el){
+    [...el.children].forEach(b=>{ b.style.height = (6 + Math.random()*28) + 'px'; });
+  }
+  const waveLeft = document.getElementById('waveLeft');
+  const waveRight = document.getElementById('waveRight');
+  buildWave(waveLeft, 40); buildWave(waveRight, 40);
+  animateWave(waveLeft); animateWave(waveRight);
+  setInterval(()=>{ animateWave(waveLeft); animateWave(waveRight); }, 450);
+
+  // idle status cycling
+  const idleStates = ['IDLE','STANDBY','AWAITING_INPUT','READY'];
+  document.querySelectorAll('[data-idle]').forEach(line=>{
+    let i = Math.floor(Math.random()*idleStates.length);
+    setInterval(()=>{
+      i = (i+1) % idleStates.length;
+      line.firstChild.textContent = idleStates[i];
+    }, 3200 + Math.random()*1500);
+  });
+
+  // uptime clock
+  let secs = 0;
+  setInterval(()=>{
+    secs++;
+    const h = String(Math.floor(secs/3600)).padStart(2,'0');
+    const m = String(Math.floor((secs%3600)/60)).padStart(2,'0');
+    const s = String(secs%60).padStart(2,'0');
+    document.getElementById('uptime').textContent = `${h}:${m}:${s}`;
+  }, 1000);
+
+  // run scan button -> pulse status
+  const btn = document.getElementById('runScan');
+  const scanStatus = document.getElementById('scanStatus');
+  btn.addEventListener('click', ()=>{
+    btn.classList.add('scanning');
+    btn.textContent = 'SCANNING...';
+    scanStatus.textContent = 'QUERYING UPSTREAM INDEX...';
+    setTimeout(()=>{
+      btn.classList.remove('scanning');
+      btn.textContent = 'RUN FULL SCAN';
+      scanStatus.textContent = 'ALL_SYSTEMS_NOMINAL';
+    }, 2200);
+  });
+</script>
+
+</body>
+</html>
